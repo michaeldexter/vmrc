@@ -19,7 +19,7 @@
 ############################################################ INFORMATION
 #
 # $Title: virtual machine management script $
-# $Version: v.0.1$
+# $Version: v.0.2$
 #
 # rc(8) command script for managing virtual machines.
 #
@@ -289,7 +289,6 @@ f_load()
 	f_vmmcheck
 	f_netstart
 
-	vm_name="$vm_names"
 	if [ -e "/dev/vmm/$vm_name" ]; then
 		info "$funcname: %s is loaded. Skipping..." "$vm_name"
 		return
@@ -299,7 +298,8 @@ f_load()
 		return
 	fi
 
-	f_readconfig_return
+#	f_readconfig_return
+		. "$host_vmroot/$vm_name/${vm_name}.conf"
 
 	if [ "$vm_os_type" = "freebsd" ]; then
 		case "$vm_dev_type" in
@@ -513,7 +513,8 @@ f_stop()
 #		info "$funcname: Destroying %s" "tap$vm_id"
 #		ifconfig "tap$vm_id" destroy
 
-	f_readconfig_return
+#	f_readconfig_return
+		. "$host_vmroot/$vm_name/${vm_name}.conf"
 	case "$vm_console" in
 	stdio)
 		return
@@ -569,7 +570,8 @@ f_destroy()
 
 	info "$funcname: Cleaning up detached consoles..."
 # fix: Check for the config file first
-	f_readconfig_return
+#	f_readconfig_return
+	. "$host_vmroot/$vm_name/${vm_name}.conf"
 	case "$vm_console" in
 	stdio)
 # fix: do I want 'return'?
@@ -616,7 +618,8 @@ f_attach()
 	vm_id="${vm_name#${vm_name%[0-9]*}}"
 	[ -e "/dev/vmm/$vm_name" ] ||
 		die "$funcname: %s is not loaded! Exiting." "$vm_name"
-	f_readconfig_exit
+#	f_readconfig_exit
+	. "$host_vmroot/$vm_name/${vm_name}.conf"
 	case "$vm_console" in
 	stdio)
 		die "%s\n%s" \
@@ -649,7 +652,8 @@ f_iso()
 	info "Entering $funcname()"
 	vm_name=$vm_names
 #	vm_id="${vm_name#${vm_name%[0-9]*}}"
-	f_readconfig_exit
+#	f_readconfig_exit
+	. "$host_vmroot/$vm_name/${vm_name}.conf"
 
 		case "$vm_dev_type" in
 			img)
@@ -744,7 +748,8 @@ f_grub()
 
 	info "Entering $funcname()"
 	vm_name=$vm_names
-	f_readconfig_exit
+#	f_readconfig_exit
+	. "$host_vmroot/$vm_name/${vm_name}.conf"
 	info "$funcname: Creating ${host_vmroot}/${vm_name}/device.map"
 	echo "(hd0) ${host_vmroot}/${vm_name}/${vm_name}.img" > "${host_vmroot}/${vm_name}/device.map"
 	echo "(cd0) ${host_vmroot}/${vm_name}/${vm_name}.iso" >> "${host_vmroot}/${vm_name}/device.map"
@@ -766,7 +771,8 @@ f_mount()
 	local funcname=f_mount
 	local devs
 	vm_name=$vm_names
-	f_readconfig_exit
+#	f_readconfig_exit
+	. "$host_vmroot/$vm_name/${vm_name}.conf"
 		[ "$vm_os_type" = "freebsd" ] ||
 			die "$funcname: Only supported for FreeBSD VMs"
 	f_umount
@@ -849,7 +855,8 @@ f_umount()
 		info "$funcname: Unmounting %s" "${host_vmroot}/${vm_name}/mnt/"
 		umount -f "${host_vmroot}/${vm_name}/mnt/"
 	fi
-	f_readconfig_exit
+#	f_readconfig_exit
+	. "$host_vmroot/$vm_name/${vm_name}.conf"
 	if [ "$vm_dev_type" = "img" ]; then
 		info "DEBUG: Destroying memory devices if type img"
 		f_mddestroy
@@ -868,7 +875,8 @@ f_format()
 	vm_name=$vm_names
 	[ -e "/dev/vmm/$vm_name" ] &&
 		die "$funcname: %s is loaded! Exiting." "$vm_name"
-	f_readconfig_exit
+#	f_readconfig_exit
+	. "$host_vmroot/$vm_name/${vm_name}.conf"
 	if [ "$vm_dev_type" = "img" ]; then
 		if [ -e "${host_vmroot}/${vm_name}/${vm_name}.img" ]; then
 			info "$funcname: ${host_vmroot}/${vm_name}/${vm_name}.img already exists. Skipping..."
@@ -957,7 +965,8 @@ f_fetch()
 
 	info "Entering $funcname()"
 	vm_name=$vm_names
-	f_readconfig_exit
+#	f_readconfig_exit
+	. "$host_vmroot/$vm_name/${vm_name}.conf"
 	[ "$vm_os_type" = "freebsd" ] ||
 		die "$funcname: Not supported on $vm_os_type VMs! Exiting."
 	[ -d "${host_vmroot}/distributions/$vm_os_ver" ] ||
@@ -989,7 +998,8 @@ f_install()
 
 	info "Entering $funcname()"
 	vm_name=$vm_names
-	f_readconfig_exit
+#	f_readconfig_exit
+	. "$host_vmroot/$vm_name/${vm_name}.conf"
 	[ "$vm_os_type" = "freebsd" ] ||
 		die "$funcname: Not supported on $vm_os_type VMs! Exiting."
 	[ -e "/dev/vmm/$vm_name" ] &&
@@ -1129,13 +1139,16 @@ vm_start()
 			vm_id="${vm_name#${vm_name%[0-9]*}}"
 			[ "$vm_name" = "distributions" ] && continue
 			found=1
+			echo "Parsing $vm_name"
 		if [ -e "/dev/vmm/$vm_name" ]; then
 # fix: proper way to integrate f_readconfig_return()
 			info "$name: $vm_name is loaded. Skipping..."
 		elif [ ! -f "${host_vmroot}/${vm_name}/${vm_name}.conf" ]; then
 			info "$name: $vm_name: no configuration file found: Skipping..."
 		else
-			f_readconfig_return
+		echo "Reading $host_vmroot/$vm_name/${vm_name}.conf"
+		. "$host_vmroot/$vm_name/${vm_name}.conf"
+#			f_readconfig_return
 			f_load
 			f_boot
 		fi
@@ -1152,7 +1165,8 @@ vm_start()
 			exit
 		else
 			info "starting %s" "$vm_name"
-			f_readconfig_return
+#			f_readconfig_return
+			. "$host_vmroot/$vm_name/${vm_name}.conf"
 			f_load
 			f_boot
 		fi
@@ -1166,7 +1180,8 @@ vm_start()
 			info "$name: $vm_name: no configuration file found: Skipping..."
 		else
 			info "$name: starting %s" "$vm_name"
-			f_readconfig_return
+#			f_readconfig_return
+			. "$host_vmroot/$vm_name/${vm_name}.conf"
 			f_load
 			f_boot
 		fi
@@ -1228,7 +1243,8 @@ vm_restart()
 		if [ ! -f "${host_vmroot}/${vm_name}/${vm_name}.conf" ]; then
 			info "$name: $vm_name: no configuration file found: Skipping..."
 		else
-			f_readconfig_return
+#			f_readconfig_return
+			. "$host_vmroot/$vm_name/${vm_name}.conf"
 			f_stop
 			f_load
 			f_boot
@@ -1244,7 +1260,8 @@ vm_restart()
 			exit
 		else
 			info "starting %s" "$vm_name"
-			f_readconfig_return
+#			f_readconfig_return
+			. "$host_vmroot/$vm_name/${vm_name}.conf"
 			f_stop
 			f_load
 			f_boot
@@ -1257,7 +1274,8 @@ vm_restart()
 			info "$name: $vm_name: no configuration file found: Skipping..."
 			fi
 			info "$name: starting %s" "$vm_name"
-			f_readconfig_return
+#			f_readconfig_return
+			. "$host_vmroot/$vm_name/${vm_name}.conf"
 			f_stop
 			f_load
 			f_boot
@@ -1315,7 +1333,8 @@ vm_load()
 		if [ ! -f "${host_vmroot}/${vm_name}/${vm_name}.conf" ]; then
 			info "$name: $vm_name: no configuration file found: Skipping..."
 		else
-			f_readconfig_return
+#			f_readconfig_return
+			. "$host_vmroot/$vm_name/${vm_name}.conf"
 			f_load
 		fi
 		done
@@ -1329,7 +1348,8 @@ vm_load()
 			exit
 		else
 			info "starting %s" "$vm_name"
-			f_readconfig_return
+#			f_readconfig_return
+			. "$host_vmroot/$vm_name/${vm_name}.conf"
 			f_load
 		fi
 	;;
@@ -1340,7 +1360,8 @@ vm_load()
 			info "$name: $vm_name: no configuration file found: Skipping..."
 			fi
 			info "$name: starting %s" "$vm_name"
-			f_readconfig_return
+#			f_readconfig_return
+			. "$host_vmroot/$vm_name/${vm_name}.conf"
 			f_load
 		done
 
@@ -1365,7 +1386,8 @@ vm_boot()
 		if [ ! -f "${host_vmroot}/${vm_name}/${vm_name}.conf" ]; then
 			info "$name: $vm_name: no configuration file found: Skipping..."
 		else
-			f_readconfig_return
+#			f_readconfig_return
+			. "$host_vmroot/$vm_name/${vm_name}.conf"
 			f_boot
 		fi
 		done
@@ -1379,7 +1401,8 @@ vm_boot()
 			exit
 		else
 			info "starting %s" "$vm_name"
-			f_readconfig_return
+#			f_readconfig_return
+			. "$host_vmroot/$vm_name/${vm_name}.conf"
 			f_boot
 		fi
 	;;
@@ -1390,7 +1413,8 @@ vm_boot()
 			info "$name: $vm_name: no configuration file found: Skipping..."
 			fi
 			info "$name: starting %s" "$vm_name"
-			f_readconfig_return
+#			f_readconfig_return
+			. "$host_vmroot/$vm_name/${vm_name}.conf"
 			f_boot
 		done
 	esac
@@ -1526,7 +1550,8 @@ vm_jail()
 	;;
 	1) info "$name: booting VM %s as a jail $vm_names"
 		f_mount
-		f_readconfig_exit
+#		f_readconfig_exit
+		. "$host_vmroot/$vm_name/${vm_name}.conf"
 		info "$name: Experimental but should work"
 		info "flags like \"sendmail_enable\", \"inetd_flags\" and"
 		info "\"rpcbind_enable\" are not configured during auto-provisiong"
@@ -1556,7 +1581,8 @@ vm_qemu()
 		exit 1
 	;;
 	1) info "$name: booting VM %s under qemu $vm_names"
-	f_readconfig_exit
+#	f_readconfig_exit
+	. "$host_vmroot/$vm_name/${vm_name}.conf"
 		type qemu-system-x86_64 > /dev/null 2>&1 ||
 			die "qemu is not installed! (ports/emulators/qemu) Exiting."
 
@@ -1674,7 +1700,8 @@ vm_provision()
 		exit 1
 	;;
 	1) info "$name: provisioning VM $vm_names"
-	f_readconfig_exit
+#	f_readconfig_exit
+	. "$host_vmroot/$vm_name/${vm_name}.conf"
 	[ "$vm_os_type" = "freebsd" ] ||
 		die "$name: Not supported on $vm_os_type VMs! Exiting."
 	info "Provisioning $vm_os_ver"

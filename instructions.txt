@@ -1,5 +1,5 @@
 Copyright (c) 2012-2014 Michael Dexter <editor@callfortesting.org>
-Script and instructions.txt Version: v.0.1
+Script and instructions.txt Version: v.0.2
 
 Thank you for trying vmrc, the Virtual Machine rc script.
 
@@ -201,6 +201,8 @@ test: Why are ubuntu VMs read-only upon boot?
 fix: Test: acpi kill in FreeBSD 11.0
 linux needs acpi-utils, openbsd doesn't support power button?
 hw.allowpowerdown=1 ?
+fix: FreeBSD guests sometimes boot only upon nmdm attach (nmdm bug!)
+fix: Ubuntu often has a captive loader, halting boot
 fix: Test: host_vmroot without trailing / (make idiot-proof)
 fix: any way to avoid //'s in paths but safely not add trailing one in conf?
 fix: CHECK FOR CONFLICTING VM ID NUMBERS BEFORE BOOT
@@ -211,7 +213,6 @@ fix: Formatting: Remaining spaces in place of tabs, for multiline info()?
 fix: Formatting: Any way to elegantly wrap long URL's?
 fix: Merge f_iso and vm_load/vm_boot
 fix: Homogenize info/error/debug messages, lose some
-fix: Why do nmdm VM's sometimes boot upon attach? (bug in nmdm)
 fix: Check for a valid tmux session before attempting to attach?
 fix: Add zvol and raw device support to grub and load
 fix: Destroy VM zvols in delete function
