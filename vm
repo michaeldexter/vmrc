@@ -19,7 +19,7 @@
 ############################################################ INFORMATION
 #
 # $Title: virtual machine management script $
-# $Version: v.0.2$
+# $Version: v.0.2.1$
 #
 # rc(8) command script for managing virtual machines.
 #
@@ -478,9 +478,11 @@ bhyve_cmd="/usr/sbin/bhyve \
 		;;
 	tmux-detached)
 #		/usr/local/bin/tmux new -d -s "$vm_name" "eval $bhyve_cmd"
-# 		/usr/local/bin/tmux new -d -s "$vm_name" "eval $bhyve_cmd ; bhyvectl --destroy --vm=$vm_name "
+# This variation will no destroy the VM after VM reboot
+ 		/usr/local/bin/tmux new -d -s "$vm_name" "eval $bhyve_cmd ; bhyvectl --destroy --vm=$vm_name "
 #tmux new "sh -c '( trap \"touch /tmp/FOO\" EXIT; vi )'"
-		/usr/local/bin/tmux new -d -s $vm_name "( trap \"f_destroy\" EXIT; eval \"$bhyve_cmd\" )"
+# This variation attempts to destroy the VM after reboot (needs attention)
+#		/usr/local/bin/tmux new -d -s $vm_name "( trap \"f_destroy\" EXIT; eval \"$bhyve_cmd\" )"
 # fix: preferred syntax but fails: tmux loses the f_destroy function:
 # 		/usr/local/bin/tmux new -d -s "$vm_name" "sh -c ( trap f_destroy EXIT; eval $bhyve_cmd )" 
 # 		/usr/local/bin/tmux new -d -s "$vm_name" "( trap f_destroy EXIT; eval "$bhyve_cmd" )"
@@ -941,12 +943,15 @@ f_format()
 		gpart add -t freebsd-boot -s 256k "$vm_device"
 		gpart bootcode -b /boot/pmbr -p /boot/gptboot -i 1 "$vm_device"
 		# or /boot/gptboot
+		# bootcode to have zfsgptboot
 		gpart add -t freebsd-ufs "$vm_device"
+		#freebsd-zfs
 
 		info "\n$funcname: DEBUG: show %s" "$vm_device"
 		gpart show "$vm_device"
 		info "\n$funcname: Running newfs -U %s" "${vm_device}p2"
 		newfs -U "${vm_device}p2"
+		# zpool create
 		;;
 	*)
 		die "Invalid VM device layout"
@@ -1090,7 +1095,7 @@ f_install()
 
 	info "\n$funcname: Enabling the tty and backing up default /etc/ttys\n"
 	cp "${host_vmroot}/${vm_name}/mnt/etc/ttys" "${host_vmroot}/${vm_name}/mnt/etc/ttys.orig"
-	cat > "${host_vmroot}/${vm_name}/mnt/etc/ttys" <<-EOF
+	cat >> "${host_vmroot}/${vm_name}/mnt/etc/ttys" <<-EOF
 	console "/usr/libexec/getty std.9600" vt100 on secure
 	EOF
 

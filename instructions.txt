@@ -3,6 +3,8 @@ Script and instructions.txt Version: v.0.3
 
 Thank you for trying vmrc, the Virtual Machine rc script.
 
+If you did NOT just download this, redownload it for the lastest version.
+
 This has come a long way from a 2005 jail(8) provisioning and management script
 to a 2012 FreeBSD 9.0 bhyve build script to a series of sequential FreeBSD 10.*
 VM provisioning and management scripts.
@@ -137,6 +139,10 @@ can be attached to with using the "attach" command, i.e.:
 You can detach from nmdm consoles with "~ CTRL-d" and from tmux sessions with
 "CTRL-b d".
 
+NOTE: nmdm consoles have the advantage of using the in-base cu(1) command but
+sometimes cause the VM to boot only upon first attachment. tmux may be a wiser
+choice in production environments.
+
 
 ### DEPENDENCIES ###
 
@@ -156,6 +162,10 @@ Please send questions, bug fixes, love mail and hate mail to:
 Michael Dexter <editor@callfortesting.org>
 
 I will consider offering this on something like GitHub if interest exists.
+
+FreeBSD VMs have their disk images fsck'd before boot given that fsck at boot
+time is not always comprehensive and may result in VM boot failure. Jailed VMs
+with dirty file systems may cause kernel panics. (bug?)
 
 FreeBSD auto-provisioned VMs have sendmail semi-disabled and
 "PermitRootLogin yes" set in /etc/ssh/sshd_config
@@ -194,11 +204,12 @@ testing it and providing resources for it and bhyve's improvement.
 
 *NOT* PACKAGE THIS YET - IT IS NOT READY AND IS CHANGING RAPIDLY
 note: Tested on 10.0-RELEASE, PC-BSD 10.0 and FreeBSD 11 snapshots
-news: Automatic console detection is being tested
+news: Automatic console detection is being tested, eliminating tty issues
 test: Try every incorrect sequence of commands and see if checks work
 See "# fix: " throughout the script
-concern: loaders can be captive and hang: detach them, check flow
+concern: loaders can be captive and hang: detach loader steps, check flow
 test: Why are ubuntu VMs read-only upon boot?
+test: TrueOS
 fix: Test: acpi kill in FreeBSD 11.0
 linux needs acpi-utils, openbsd doesn't support power button?
 hw.allowpowerdown=1 ?
@@ -213,6 +224,7 @@ fix: Line wrapping!
 fix: Formatting: Remaining spaces in place of tabs, for multiline info()?
 fix: Formatting: Any way to elegantly wrap long URL's?
 fix: Merge f_iso and vm_load/vm_boot
+fix: Concern: could a VM booted at startup precede ful networking?
 fix: Homogenize info/error/debug messages, lose some
 fix: Check for a valid tmux session before attempting to attach?
 fix: Add zvol and raw device support to grub and load

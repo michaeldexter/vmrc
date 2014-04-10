@@ -24,14 +24,14 @@
 #
 # CAUTION: This will forcibly unmount and use /mnt
 
-ISOSITE="http://cdn.freenas.org/9.2.0/RELEASE/x64/"
-ISOIMG="FreeNAS-9.2.0-RELEASE-x64.img.xz"
+ISOSITE="http://cdn.freenas.org/9.2.1/RELEASE/x64/"
+ISOIMG="FreeNAS-9.2.1-RELEASE-x64.img.xz"
 DISTFILES="/usr/local/vm/distributions/freenas/"
 
 # Read the first 29 characters of FreeNAS-9.2.0-RELEASE-x64.img.xz
-# to give us FreeNAS-9.2.0-RELEASE-x64.img  KLUGE!!!
+# to give us FreeNAS-9.2.1-RELEASE-x64.img  KLUGE!!!
 
-EXPANDED=$(echo FreeNAS-9.2.0-RELEASE-x64.img.xz | cut -c 1-29)
+EXPANDED=$(echo FreeNAS-9.2.1-RELEASE-x64.img.xz | cut -c 1-29)
 
 
 if [ ! -f $DISTFILES$ISOIMG ]; then
