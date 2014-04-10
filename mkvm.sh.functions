@@ -1,0 +1,1009 @@
+#!/bin/sh
+
+# FUNC OVERLOAD
+
+# BUG: loader.conf timeout is not working
+# BUG: WRONG BOOT LOADER? ........................
+# Templates!
+# vmrc dist options... tar without cat
+# Test above all, check for clean zfs mountpoint!
+# TESTS! VALIDATE INPUT (DOES DEV EXIST?), exit codes. graph it all?
+# FUTURE: What labling? Serial number when available?
+# FUTURE: more than ONE FILESYSTEM PER DEVICE FOR VM USE, swap, raidz
+# ... encryption
+# NOTE FREENAS storage fs's want swap!
+# How to align UFS block sizes?
+# NO fdiskmbr for 4k devices!
+# FSCK 'EM as a test
+# Is the PC-BSD service manager suppose to stop svcs when you disable them?
+# dd should have a -u units flag: MB, GB...
+#[ ! -e $1] && echo "$1 not found"; exit
+# simple alignment test utility!
+# logging with debug functions?
+# typeset man page?
+# http://www.allanjude.com/bsd/zfs-advanced.html
+# http://svnweb.freebsd.org/base/head/usr.sbin/bsdinstall/scripts/zfsboot?view=markup&pathrev=259598
+# https://github.com/freenas/freenas/blob/master/gui/middleware/notifier.py#L1055
+# 
+# http://daemon-notes.com/articles/system/install-zfs/gpart
+# http://daemon-notes.com/articles/system/advanced-format
+# http://www.wonkity.com/~wblock/docs/html/disksetup.html
+# https://wiki.freebsd.org/RootOnZFS/GPTZFSBoot/9.0-RELEASE
+# http://daemonforums.org/showthread.php?t=8032
+# https://forums.freebsd.org/viewtopic.php?t=19093
+
+f_wipe_dev() ## $1 dev ## - Wipe everything possible from a device
+{
+# NOTE /dev/label/
+# CONSIDER SWAP OFF AND JOURNAL OFF, pool membership?
+# PC-BSD
+#  for i in `swapctl -l | grep "$DISK" | awk '{print $1}'`
+#  do
+#    swapoff ${i} >/dev/null 2>/dev/null
+#  done
+#      gjournal stop -f ${rawjournal} >>${LOGOUT} 2>>${LOGOUT}
+#      gjournal clear ${rawjournal} >>${LOGOUT} 2>>${LOGOUT}
+
+# Destroy pools
+# Destroy nop's
+# Delete partitions 1 2 3 4... before destroy
+# gpart delete -i n $1
+#swapoff ${1}p1 # FreeNAS
+	geli detach $1
+	gpart destroy -F $1
+	graid delete $1
+	zpool labelclear -f $1
+	gpart create -s gpt $1
+	gpart destroy -F $1
+	dd if=/dev/zero of=$1 bs=1m count=1 # 1048576 bytes
+#dd if=/dev/zero of=$1 count=3000 # 1536000 bytes
+#dd if=/dev/zero of=/dev/md0 bs=512 count=34 # 17408 bytes
+#dd if=/dev/zero of=$f_device bs=512 count=1
+	dd if=/dev/zero of=${1} bs=1m oseek=`diskinfo ${1} | awk '{print int($3 / (1024*1024)) - 4;}'`
+}
+
+
+
+
+# PARTITIONING
+
+# How about a check-alignment function?
+# Data partitions would require sizes for all
+
+# Create a traditional fdisk/MBR layout
+f_fdisk_mbr_layout_preflight() ## $1 dev ##
+{
+	echo "Simple preflight output"
+	[ -e $1 ] || echo "Device $1 does not exist."
+# EXIT!
+}
+
+f_fdisk_mbr_layout() ## $1 dev ##
+{
+	fdisk -BI $1
+}
+
+f_fdisk_mbr_layout_debug() ## $1 dev ##
+{
+	echo "Simple debug output"
+	ls ${1}*
+#	/dev/md0s1
+#	test: file diska.img: x86 boot sector; partition 1: ID=0xa5, active, starthead 1, startsector 63, 2088387 sectors, code offset 0x31
+#	END RESULT: /dev/md0s1
+# 512/4096 is not an issue at this stage!
+}
+
+
+# Create a gpart/MBR layout
+f_gpart_mbr_layout_preflight() ## $1 dev ##
+{
+	echo "Simple preflight output"
+	[ -e $1 ] || echo "Device $1 does not exist."
+}
+
+f_gpart_mbr_layout() ## $1 dev ##
+{
+	gpart create -s mbr $1
+#		fdisk shows NOTHING! LESS THAN BEFORE
+	gpart add -t freebsd $1
+#	/dev/md1s1 APPEARS
+#	gpart show md1s1 # SHOWS NOTHING
+#	file diskb.img: x86 boot sector; partition 1: ID=0xa5, starthead 1, startsector 63, 2097081 sectors, extended partition table (last)\011, code offset 0x0
+#	gpart show md1
+	gpart create -s bsd ${1}s1 # DO NOT DELETE AND RECREATE WILL FAIL
+#	gpart show md1s1 # SHOWS BSD
+#	gpart show md1 # SHOWS SAME
+#=>     63  2097089  md1  MBR  (1.0G)
+#       63  2097081    1  freebsd  (1.0G)
+#  2097144        8       - free -  (4.0K)
+#	END RESULT: /dev/md1s1
+	# 512/4096 is not an issue at this stage!
+}
+
+
+# Create a gpart/GPT layout
+
+f_gpart_gpt_layout_preflight() ## $1 dev ##
+{
+	echo "Simple preflight output"
+	[ -e $1 ] || echo "Device $1 does not exist."
+	echo CreatingLayout
+}
+
+f_gpart_gpt_layout() ## $1 dev ##
+{
+	gpart create -s gpt $1
+}
+
+f_gpart_gpt_layout_debug() ## $1 dev ##
+{
+	echo "Simple debug output"
+# file <disk image>
+	ls ${1}*
+	echo "Running gpart show $1"
+	gpart show $1
+#	echo "Running gpart show ${1}p1"
+#	gpart show ${1}p1
+#	gpart show
+#=>     34  2097085  md1  GPT  (1.0G)
+#       34  2097085       - free -  (1.0G)
+#	note startsector:
+#	file diskb.img: x86 boot sector; partition 1: ID=0xee, starthead 0, startsector 1, 2097151 sectors, extended partition table (last)\011, code offset 0x0
+
+}
+
+
+# Install boot code to an fdisk/MBR layout
+f_fdisk_mbr_ufs_boot_preflight() ## $1 dev ##
+{
+	echo "Simple preflight output"
+	[ -e $1 ] || echo "Device $1 does not exist."
+}
+
+f_fdisk_mbr_ufs_boot() ## $1 dev ##
+{
+	bsdlabel -wB ${1}s1
+# creates /dev/md0s1a surprisingly. why?
+}
+
+f_fdisk_mbr_ufs_boot_debug() ## $1 dev ##
+{
+	echo "Simple debug output"
+	ls ${1}
+# Should this have created /dev/mdNs1a ?
+}
+
+
+# Install the boot0 boot manager to an fdisk/MBR layout
+# Will this only give the menu if there are multiple slices/drives?
+f_fdisk_mbr_ufs_bootmgr_preflight() ## $1 dev ##
+{
+	echo "Simple preflight output"
+	[ -e $1 ] || echo "Device $1 does not exist."
+}
+
+f_fdisk_mbr_ufs_bootmgr() ## $1 dev ## Same as fdisk -B -b /boot/boot0
+{
+	bsdlabel -w -B -b /boot/boot0 "${1}s1"
+# creates /dev/md0s1a surprisingly why?
+}
+
+f_fdisk_mbr_ufs_bootmgr_debug() ## $1 dev ##
+{
+	echo "Simple debug output"
+}
+
+
+# http://daemon-notes.com/articles/system/install-zfs/gpart
+# Install boot code to a gpart/MBR/UFS layout
+f_gpart_mbr_ufs_boot_preflight() ## $1 dev ##
+{
+	echo "Simple preflight output"
+	[ -e $1 ] || echo "Device $1 does not exist."
+}
+
+f_gpart_mbr_ufs_boot() ## $1 dev ## no freebsd-boot!
+{
+# CHECK THESE
+
+	gpart bootcode -b /boot/mbr $1
+	gpart set -a active -i 1 $1
+	gpart bootcode -b /boot/boot ${1}s1
+}
+
+f_gpart_mbr_ufs_boot_debug() ## $1 dev ##
+{
+	echo "Simple debug output"
+	ls ${1}*
+	gpart show $1
+}
+
+
+# Install the boot0 boot manager to a gpart/MBR/UFS layout
+f_gpart_mbr_ufs_bootmgr_preflight() ## $1 dev ##
+{
+	echo "Simple preflight output"
+	[ -e $1 ] || echo "Device $1 does not exist."
+}
+
+f_gpart_mbr_ufs_bootmgr() ## $1 dev ##
+{
+	gpart bootcode -b /boot/boot0 $1
+	gpart set -a active -i 1 $1
+	gpart bootcode -b /boot/boot ${1}s1 # mgr HERE TOO? (see w block)
+}
+
+f_gpart_mbr_ufs_bootmgr_debug() ## $1 dev ##
+{
+	echo "Simple debug output"
+	echo
+}
+
+
+# Install boot code to a gpart/GPT/UFS layout
+# Install the boot0 boot manager to a gpart/MBR/UFS layout
+f_gpart_gpt_ufs_boot_preflight() ## $1 dev ##
+{
+	echo "Simple preflight output"
+	[ -e $1 ] || echo "Device $1 does not exist."
+}
+
+f_gpart_gpt_ufs_boot() ## $1 dev ## active by default? boot0 mgr?
+{
+# Note alignment
+	gpart add -s 512k -a 4k -t freebsd-boot $1
+	gpart bootcode -b /boot/pmbr -p /boot/gptboot -i 1 $1
+}
+
+f_gpart_gpt_ufs_boot_debug() ## $1 dev ##
+{
+	echo "Simple debug output"
+	echo
+}
+
+
+# Install the boot0 boot manager to a gpart/GPT/UFS layout
+f_gpart_gpt_ufs_bootmgr_preflight() ## $1 dev ##
+{
+	echo "Simple preflight output"
+	[ -e $1 ] || echo "Device $1 does not exist."
+}
+
+f_gpart_gpt_ufs_bootmgr() ## $1 dev ## active by default? boot0 mgr?
+{
+# Note alignment
+
+# IMPLEMENT
+	gpart add -s 512k -a 4k -t freebsd-boot $1
+	gpart bootcode -b /boot/pmbr -p /boot/gptboot -i 1 $1
+}
+
+f_gpart_gpt_ufs_bootmgr() ## $1 dev ##
+{
+	echo "Simple debug output"
+	echo
+}
+
+
+# Install boot code to a gpart/MBR/ZFS layout
+f_gpart_mbr_zfs_boot_preflight() ## $1 dev ##
+{
+	echo "Simple preflight output"
+	[ -e $1 ] || echo "Device $1 does not exist."
+	echo AddingBootCode
+}
+
+f_gpart_mbr_zfs_boot() ## $1 dev ##
+{
+	gpart bootcode -b /boot/mbr $1
+#CHECK THIS ONE:
+	gpart set -a active -i 1 $1
+	gpart bootcode -b /boot/boot ${1}s1
+	dd if=/boot/zfsboot of=${1}s1 count=1
+
+###### !!! ######
+# Probably too early! Needed?
+#	dd if=/boot/zfsboot of=${1}s1a skip=1 seek=1024
+}
+
+f_gpart_mbr_zfs_boot_debug() ## $1 dev ##
+{
+	echo "Simple debug output"
+#file 2gb.img
+	ls ${1}*
+	gpart show $1
+	gpart show ${1}s1
+	gpart show ${1}s1a
+}
+
+
+# Install the boot0 boot manager to a gpart/MBR/ZFS layout
+f_gpart_mbr_zfs_bootmgr_preflight() ## $1 dev ##
+{
+	echo "Simple preflight output"
+	[ -e $1 ] || echo "Device $1 does not exist."
+}
+
+f_gpart_mbr_zfs_bootmgr() ## $1 dev ##
+{
+	gpart bootcode -b /boot/boot0 $1
+#CHECK THIS ONE:
+	gpart set -a active -i 1 $1
+	gpart bootcode -b /boot/boot ${1}s1
+	dd if=/boot/zfsboot of=${1}s1 count=1
+	# Probably too early!
+	dd if=/boot/zfsboot of=${1}s1a skip=1 seek=1024
+}
+
+f_gpart_mbr_zfs_bootmgr_debug() ## $1 dev ##
+{
+	echo "Simple debug output"
+	echo
+}
+
+
+# Install boot code to a gpart/GPT/ZFS layout - active by default? boot0 mgr?
+f_gpart_gpt_zfs_boot_preflight() ## $1 dev ##
+{
+	echo "Simple preflight output"
+	[ -e $1 ] || echo "Device $1 does not exist."
+}
+
+f_gpart_gpt_zfs_boot() ## $1 dev ##
+{
+# Note alignment
+# CHECK
+	gpart add -s 512k -a 4k -t freebsd-boot $1
+	gpart bootcode -b /boot/pmbr -p /boot/gptzfsboot -i 1 $1
+}
+
+f_gpart_gpt_zfs_boot_debug() ## $1 dev ##
+{
+	echo "Simple debug output"
+#file 2gb.img
+	ls ${1}*
+	gpart show $1
+	gpart show ${1}p1
+	#gpart show ${1}p2
+}
+
+
+# Install the boot0 boot manager to a gpart/GPT/ZFS layout
+f_gpart_gpt_zfs_bootmgr_preflight() ## $1 dev ##
+{
+	echo "Simple preflight output"
+	[ -e $1 ] || echo "Device $1 does not exist."
+}
+
+f_gpart_gpt_zfs_bootmgr() ## $1 dev ## active by default? boot0 mgr?
+{
+# Note alignment
+
+# CHECK THIS
+	gpart add -s 512k -a 4k -t freebsd-boot $1
+	gpart bootcode -b /boot/pmbr -p /boot/gpt_zfsboot -i 1 $1
+}
+
+# DO I WANT TO LABEL? UFS by label, ZFS by label...
+# NOTE NEWFS -L http://www.wonkity.com/~wblock/docs/html/disksetup.html
+# then disktab!!!
+# FSCK! This isn't even with datasets in mind!
+# md device disk labels? iscsi?
+# See boot0 with bhyveload?
+# SWAP!!! slice? dataset?
+
+f_gpart_gpt_zfs_bootmgr_debug() ## $1 dev ##
+{
+	echo "Simple debug output"
+	ls ${1}*
+}
+
+
+# Create a new fdisk/MBR/UFS bootable filesystem (better name)
+f_fdisk_mbr_ufs_newfs_bootable_preflight() ## $1 dev ##
+{
+	echo "Simple preflight output"
+	[ -e $1 ] || echo "Device $1 does not exist."
+}
+
+f_fdisk_mbr_ufs_newfs_bootable() ## $1 dev ##
+{
+	newfs -U "${1}s1a"
+}
+
+f_fdisk_mbr_ufs_newfs_bootable_debug() ## $1 dev ##
+{
+	echo "Simple debug output"
+	ls ${1}*
+	fdisk $1
+}
+
+
+# Create a new fdisk/MBR/UFS data filesystem (better name)
+f_fdisk_mbr_ufs_newfs_data_preflight() ## $1 dev ##
+{
+	echo "Simple preflight output"
+	[ -e $1 ] || echo "Device $1 does not exist."
+}
+
+f_fdisk_mbr_ufs_newfs_data() ## $1 dev ##
+{
+	newfs -U "${1}s1" # IF A DATA DISK WITH NO BOOT!
+}
+
+
+# Create a new gpart/MBR/UFS partition and filesystem
+f_gpart_mbr_ufs_newfs_preflight() ## $1 dev ##
+{
+	echo "Simple preflight output"
+	[ -e $1 ] || echo "Device $1 does not exist."
+}
+
+f_gpart_mbr_ufs_newfs() ## $1 dev ##
+{
+# Note alignment
+	gpart add -t freebsd-ufs -a 1m ${1}s1
+	newfs -U "${1}s1a"
+# was giving: gpart: autofill: No space left on device
+}
+
+f_gpart_mbr_ufs_newfs_debug() ## $1 dev ##
+{
+	echo "Simple debug output"
+	ls ${1}*
+	gpart show $1
+}
+
+
+# Create a new gpart/GPT/UFS partition and filesystem
+f_gpart_gpt_ufs_newfs_preflight() ## $1 dev ##
+{
+	echo "Simple preflight output"
+	[ -e $1 ] || echo "Device $1 does not exist."
+}
+
+f_gpart_gpt_ufs_newfs() ## $1 dev ##
+{
+# Note alignment
+	gpart add -t freebsd-ufs -a 1m $1
+	newfs -U "${1}p2"
+}
+
+f_gpart_gpt_ufs_newfs_debug() ## $1 dev ##
+{
+	echo "Simple debug output"
+	ls ${1}*
+	gpart show $1
+}
+
+
+# Create a new gpart/MBR/ZFS partition
+f_gpart_mbr_zfs_part_preflight() ## $1 dev ##
+{
+	echo "Simple preflight output"
+	[ -e $1 ] || echo "Device $1 does not exist."
+	echo AddingPartition
+}
+
+f_gpart_mbr_zfs_part() ## $1 dev ##
+{
+# Note alignment
+	gpart add -t freebsd-zfs -a 1m ${1}s1
+}
+
+f_gpart_mbr_zfs_part_debug() ## $1 dev ##
+{
+	echo "Simple debug output"
+	ls ${1}*
+	gpart show $1
+}
+
+
+# Create a new gpart/GPT/ZFS partition
+f_gpart_gpt_zfs_part_preflight() ## $1 dev ##
+{
+	echo "Simple preflight output"
+	[ -e $1 ] || echo "Device $1 does not exist."
+}
+
+f_gpart_gpt_zfs_part() ## $1 dev ##
+{
+# Note alignment
+	gpart add -t freebsd-zfs -a 1m $1
+}
+
+f_gpart_gpt_zfs_part_debug() ## $1 dev ##
+{
+	echo "Simple debug output"
+ls ${1}*
+	gpart show $1
+}
+
+
+# add boot0 manager to zfs?
+
+# Create a new gpart/MBR/zpool ???
+
+
+# WE REALLY WANT TO MAKE SURE $DEST IS CLEAR OR ZPOOL FAILS
+
+# Create a new gpart/GPT/zpool
+f_gpart_mbr_zpool_preflight() ## $1 dev $2 pool name $3 mount point ##
+{
+	echo "Simple preflight output"
+	[ -e $1 ] || echo "Device $1 does not exist."
+	[ -e $1 ] || echo "Mount point $3 does not exist."
+	ls $3
+	echo "You entered $2 and $3"
+}
+
+f_gpart_mbr_zpool() ## $1 dev $2 pool name $3 mount point ##
+{
+#kldload zfs
+# Note alignment
+	gnop create -S 4096 ${1}s1a
+	echo "debug: check for nop *s1a.nop" ; ls ${1}s1a*
+	zpool create -o cachefile=none -R $3 -m / $2 ${1}s1a.nop
+# Allan: -R $3 (no mount point, no cache file, see man page)
+# -O canmount=off ? -m none -o altroot
+	zpool export $2
+	gnop destroy -f ${1}s1a.nop
+# Note that it is exported and not ready for population!
+}
+
+f_gpart_mbr_zpool_debug() ## $1 dev $2 pool name $3 mount point ##
+{
+	echo "Simple debug output"
+	[ -e $1 ] || echo "Device $1 does not exist."
+	[ -e $1 ] || echo "Mount point $3 does not exist."
+	ls $3
+	ls ${1}*
+	gpart show $1
+	zpool import
+#	zpool list | grep $2
+#	zfs list | grep $2
+#	echo "debug: zpool list | grep $2" ; zpool list | grep $2
+#	echo "debug: zfs list | grep $2" ; zfs list | grep $2
+# needs to be imported first:
+#	echo "debug: checking sector size" ; zdb -C $pool | grep ashift
+
+}
+
+
+# Create a new gpart/GPT/zpool
+f_gpart_gpt_zpool_preflight() ## $1 dev $2 pool name $3 mount point ##
+{
+	echo "Simple preflight output"
+	[ -e $1 ] || echo "Device $1 does not exist."
+	[ -e $1 ] || echo "Mount point $3 does not exist."
+	ls $3
+	echo "You entered $2 and $3"
+	echo CreatingPool
+}
+
+f_gpart_gpt_zpool() ## $1 dev $2 pool name $3 mount point ##
+{
+#kldload zfs
+# Note alignment
+	gnop create -S 4096 ${1}p2
+	echo "inline debug: check for nop *p2.nop" ; ls ${1}p2*
+	zpool create -o cachefile=none -R $3 -m / $2 ${1}p2.nop
+# -O canmount=off ? -m none -o altroot
+	zpool export $2
+	gnop destroy -f ${1}p2.nop
+# Note that it is exported and not ready for population!
+}
+
+f_gpart_gpt_zpool_debug() ## $1 dev $2 pool name $3 mount point ##
+{
+	echo "Simple debug output"
+	[ -e $1 ] || echo "Device $1 does not exist."
+	[ -e $1 ] || echo "Mount point $3 does not exist."
+	ls $3
+	ls ${1}*
+	gpart show $1
+	zpool import
+#	zpool list | grep $2
+#	zfs list | grep $2
+#	echo "debug: zpool list | grep $2" ; zpool list | grep $2
+#	echo "debug: zfs list | grep $2" ; zfs list | grep $2
+# needs to be imported first:
+#	echo "debug: checking sector size" ; zdb -C $pool | grep ashift
+
+}
+
+
+# Truncate or dd blocksize? 4096?
+# NO mdconfig -S 4096 !!!
+
+# FYI
+# truncate -s 2G 2gb.img
+# mdconfig -af 2gb.img
+# diskinfo md0
+# md0	512	2147483648	4194304	0	0
+# diskinfo -v md0
+#	512         	# sectorsize
+#	2147483648  	# mediasize in bytes (2.0G)
+#	4194304     	# mediasize in sectors
+# fdisk md0
+#sysid 165 (0xa5),(FreeBSD/NetBSD/386BSD)
+#    start 63, size 4192902 (2047 Meg), flag 80 (active)
+#	beg: cyl 0/ head 1/ sector 1;
+#	end: cyl 260/ head 254/ sector 63
+# mdconfig -du 0
+# mdconfig -S 4096 -af 2gb.img
+# fdisk md0
+# fdisk: could not detect sector size
+# diskinfo md0
+# md0	4096	2147483648	524288	0	0
+
+#
+# WTF? FDISK CANNOT SUPPORT 4K!
+#
+# truncate new image...
+# test: file 2gb.img
+# 2gb.img: data
+# bsdlabel: /dev/md0: no valid label found
+# bsdlabel -A is all info
+# fdisk recognizes 512 but not 4096
+# gpart create -s mbr $1
+# fdisk FAILS on -S 4096 memory devices
+# https://www.freebsd.org/doc/en/articles/remote-install/installation.html
+#fdisk -BI $1 # Create a slice covering the entire disk and initialize the boot code contained in sector 0 of the given disk
+# fdisk: invalid fdisk partition table found BUT creates /dev/md0s1
+# test: file 2gb.img 
+# 2gb.img: x86 boot sector; partition 1: ID=0xa5, active, starthead 1, startsector 63, 4192902 sectors, code offset 0x31
+#bsdlabel -wB "${1}s1" # bsdlabel -wB md0 creates md0a (DON'T WANT)
+# test: bsdlabel md0s1
+# test: bsdlabel -A md0s1
+# copy off your labels?
+# test: bsdlabel md0 # (nothing)
+# test: fdisk md0
+# test: fdisk md0s1
+# The data for partition 4 is:
+# sysid 165 (0xa5),(FreeBSD/NetBSD/386BSD)
+# MOVED NEWFS
+
+# gpart mbr http://daemon-notes.com/articles/system/install-zfs/gpart
+
+# WTF? I CAN'T GET GPT MBR TO ADD FREEBSD-UFS - GPT OK
+# Drop on "freebsd"?
+
+# http://daemon-notes.com/articles/system/advanced-format
+# SHOULD KNOW: http://www.wonkity.com/~wblock/docs/html/disksetup.html
+#gpart create -s gpt $1
+#gpart add -t freebsd-boot -s 512k -a 4k $1 # Allan verbatim
+#gpart add -s 512k -a 4k -t freebsd-boot $1
+# test: gpart show md0
+# gpart delete -i 1 md0 # delete what you just did
+#the -a 4k will make it the -b be divisible by 8 (since when you provide no units, it is in sectors)
+#so -a 4k 'implies' -b 40
+# first possible is 34 but the first possible divisible by 8 is 40
+#gpart add -b 2048 -s 512k -t freebsd-boot $1
+#gpart add -b 40 -s 512k -t freebsd-boot $1
+#gpart add -b 40 -s 88 -t freebsd-boot (from the man page)
+#gpart add -b 34 -s 512k -t freebsd-boot
+# gpart show ... freebsd(-boot) should start at a sane number
+# first partition -b 2048 ? then -b xxx/8 ?
+# other partions: use M and G and should be fine
+#gpart bootcode -b /boot/pmbr -p /boot/gptboot -i 1 "$1"
+#gpart add -a 1m -s 2g -t freebsd-swap $1
+#gpart add -a 1m -s 1g -t freebsd-ufs $1 # -l label
+#gpart add -b 1m ???
+#newfs -U -S 4096 "${1}p2" # -L label
+# -b 4096 block size? -f 4096 frag-size?
+# want? gpart set -a active -i 1 ad0
+# want? gpart set -a active -i 1 ad0
+
+# FreeNAS
+#/sbin/gpart add -b 128 -t freebsd-swap -s 4194304 $1
+#/sbin/gpart add -t freebsd-zfs $1
+#/sbin/gnop create -S $BLOCKSIZE  /dev/${1}p2
+# /boot/zfs/zpool.cache
+# /data/zfs/zpool.cache
+#/sbin/zpool create -o cachefile=$ZCACHE/zpool.cache -O aclmode=passthrough -O aclinherit=passthrough -f -m $PATH -o altroot=/mnt $POOL /dev/$DEVICE"p2.nop"
+# manual raidz /dev/da1p2.nop /dev/da2p2.nop...
+#/sbin/zfs inherit mountpoint $POOL
+#/sbin/zpool export $POOL
+#gpart recover $1
+#gnop destroy $1"p2.nop"
+
+# cat base.tar.lz4 | lz4c -d | tar xpf - -C tmp3/
+# cat base.txz | tar xpf - -C tmp4/
+# cat base.tar.bz2 | tar xpf - -C tmp3/
+# cat base.tar.gz | tar xpf - -C tmp1/
+
+# 2 sec:    283M Feb 27 22:45 base.tar
+# 3 sec:    127M Feb 27 22:41 base.tar.lz4
+# 4 sec:     90M Feb 27 22:45 base.tar.gz
+# 7 sec:     59M Feb 27 22:42 base.txz
+# 15 sec:    81M Feb 27 22:45 base.tar.bz2
+
+
+# NEEDS ATTENTION
+# Install a single distribution set
+f_installset_preflight() ## $1 set name and $2 destination ##
+{
+	if [ ! -f $1 ]; then
+		echo " Distribution set $1 does not exist. Exiting."
+		exit
+	fi
+
+	if [ ! -d $2 ]; then
+		echo "Mount destination directory $2 does not exist. Exiting."
+		exit
+	fi
+
+# CHECK IF EMPTY. UFS will show .snap and zfs will show nothing
+#	if [ $( ls $2 * ) = "ls: No match." ]; then
+#		echo "Destination directory is not empty. Exiting."
+#		exit
+#	fi
+
+}
+
+f_installset() ## $1 set name and $2 destination ##
+{
+#	cat "$1" | tar xpf - -C "$2"
+	tar xpf $1 -C $2
+}
+
+f_installset_debug() ## $1 set name and $2 destination ##
+{
+	if [ $1 = kernel.txz ]; then
+		ls ${2}/boot/
+	else
+		ls $2
+	fi
+}
+
+
+# Configure loader.conf, takes in $1 mount point
+f_config_loader_conf_preflight() ## $1 mount point ##
+{
+	echo loder_conf
+}
+
+f_config_loader_conf() ## $1 mount point ##
+{
+	cat >> "${1}/boot/loader.conf" <<-EOF
+loader_delay="3"
+zfs_load="YES"
+# Seems fine without: vfs.root.mountfrom="zfs:$pool/ROOT/default"
+EOF
+}
+
+
+# $1 mount point
+f_config_loader_conf_debug_preflight() ## $1 mount point ##
+{
+	echo loader_conf
+}
+
+f_config_loader_conf_debug() ## $1 mount point ##
+{
+	cat $1/boot/loader.conf
+}
+
+
+# Configure a VirtIO MBR fstab, takes in $1 mount point
+f_config_mbr_fstab_preflight() ## $1 mount point ##
+{
+	echo fstab
+}
+
+f_config_mbr_fstab() ## $1 mount point ##
+{
+	cat > "${1}/etc/fstab" <<-EOF
+# Device	Mountpoint	FStype	Options	Dump	Pass#
+/dev/ada0s1a	/		ufs	rw	1	1
+EOF
+}
+
+f_config_mbr_fstab_debug() ## $1 mount point ##
+{
+	cat $1/etc/fstab
+}
+
+
+# Configure a VirtIO GPT fstab, takes in $1 mount point
+f_config_gpt_fstab_preflight() ## $1 mount point ##
+{
+	echo fstab
+}
+
+f_config_gpt_fstab() ## $1 mount point ##
+{
+	cat > "${1}/etc/fstab" <<-EOF
+# Device	Mountpoint	FStype	Options	Dump	Pass#
+/dev/ada0p2	/		ufs     rw      1       1
+EOF
+}
+
+f_config_gpt_fstab_debug() ## $1 mount point ##
+{
+	cat $1/etc/fstab
+}
+
+
+f_config_zfs_fstab_preflight() ## $1 mount point ##
+{
+	echo fstab
+}
+f_config_zfs_fstab() ## $1 mount point ##
+{
+	cat > "${1}/etc/fstab" <<-EOF
+# Device                Mountpoint      FStype  Options         Dump    Pass#
+EOF
+}
+
+f_config_zfs_fstab_debug() ## $1 mount point ##
+{
+	cat $1/etc/fstab
+}
+
+
+# Configure bhyve-friendly /etc/ttys, takes in $1 mount point
+f_config_ttys_preflight() ## $1 mount point ##
+{
+	echo ttys
+}
+
+f_config_ttys() ## $1 mount point ##
+{
+	cp "${1}/etc/ttys" "${1}/etc/ttys.orig"
+	cat >> "${1}/etc/ttys" <<-EOF
+console "/usr/libexec/getty std.9600" vt100 on secure
+EOF
+}
+
+f_config_ttys_debug() ## $1 mount point ##
+{
+	cat $1/etc/ttys
+}
+
+
+# Configure timezone
+f_config_tz_preflight() ## $1 mount point, $2 time zone ##
+{
+	echo timezone
+}
+
+f_config_tz() ## $1 mount point, $2 time zone ##
+{
+	echo "$2" >> "${1}/var/db/zoneinfo"
+	tzsetup -r -C "${1}/"
+}
+
+f_config_tz_debug() ## $1 mount point, $2 time zone ##
+{
+	echo
+}
+
+
+# Configure a bhyve-friendly rc.conf
+f_config_rc_conf_preflight() ## $1 mount point ##
+{
+	echo rc_conf
+}
+
+f_config_rc_conf() ## $1 mount point $2 hostname $3 IP $4 GW ##
+{
+if [ ! $3 = "" ]; then # if an IP is set
+	cat > "${1}/etc/rc.conf" <<-EOF
+hostname="$2"
+
+ifconfig_vtnet0="$3 netmask 255.255.255.0"
+defaultrouter="$4"
+sshd_enable="YES"
+
+sendmail_submit_enable="NO"
+sendmail_outbound_enable="NO"
+sendmail_msp_queue_enable="NO"
+EOF
+
+else
+	cat > "${1}/etc/rc.conf" <<-EOF
+hostname="$2"
+
+ifconfig_vtnet0="DHCP"
+sshd_enable="YES"
+
+sendmail_submit_enable="NO"
+sendmail_outbound_enable="NO"
+sendmail_msp_queue_enable="NO"
+EOF
+fi
+}
+
+f_config_rc_conf_debug() ## $1 mount point ##
+{
+	cat ${1}/etc/rc.conf
+}
+
+
+# Configure resolv.conf
+f_config_resolv_conf_preflight() ## $1 mount point ##
+{
+	echo resolv.conf
+}
+
+f_config_resolv_conf() ## $1 mount point $2 searchdomain $3 nameserver ##
+{
+cat > "${1}/etc/resolv.conf" <<-EOF
+search $2
+nameserver $3
+EOF
+}
+
+f_config_resolv_conf_debug() ## $1 mount point ##
+{
+	cat ${1}/etc/resolv.conf
+}
+
+
+# Configure sshd root login
+f_config_sshd_root_preflight() ## $1 mount point ##
+{
+	echo sshd_root_enable
+}
+
+f_config_sshd_root() ## $1 mount point ##
+{
+	echo "PermitRootLogin yes" >> "${1}/etc/ssh/sshd_config"
+}
+
+f_config_sshd_root_debug() ## $1 mount point ##
+{
+	grep Root $1/etc/ssh/sshd_config
+}
+
+
+f_set_password_preflight() ##  ##
+{
+	echo set_password
+}
+
+f_set_password() ## $1 password $2 mount point ##
+{
+	echo $1 | pw -V ${2}/etc/ usermod root -h 0
+}
+
+f_set_password_debug() ## $1 mount point ##
+{
+	echo
+}
+
+
+# f_getnextid
+#
+# Get the next available VMID in ~/vmrc/vm/
+#
+f_getnextid() ## $1 vhost_vmdir from /usr/local/etc/vm.conf
+{
+        local nextid="0" # Initialize to 0
+
+	if [ $( ls $1 | wc -l ) = 0 ]; then # A better test?
+		echo $nextid # Use the initialized zero
+		exit
+	else
+		for vm_found in ${1}/*; do            # Full path name
+			vm_foundname="${vm_found##*/}" # Strip path
+# fails with 10+	vm_foundid="${vm_foundname#${vm_foundname%[0-9]*}}"
+			vm_foundid=$( echo $vm_foundname | tr -d '/a-z,A-Z/' )
+			if [ $vm_foundid -gt $nextid ]; then
+				nextid=$vm_foundid
+			fi
+		done
+	fi
+        nextid=$(($nextid+1))
+        echo $nextid
+}
+
+
+f_hello_world()
+{
+echo "hello world!"
+echo "happy world!"
+echo "funny world!"
+}

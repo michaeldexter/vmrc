@@ -1,0 +1,40 @@
+# FreeBSD 9.2-RELEASE Template
+
+# VM operating system variables
+vm_os_type="freebsd"     # freebsd, openbsd, or linux (required)
+vm_os_ver="9.2-RELEASE" # Exact OS version if auto-fetching
+dist_site="ftp://ftp.freebsd.org/pub/FreeBSD/releases/amd64/amd64/9.2-RELEASE/"
+iso_site="ftp://ftp.freebsd.org/pub/FreeBSD/releases/amd64/amd64/ISO-IMAGES/9.2/"
+iso_img="FreeBSD-9.2-RELEASE-amd64-disc1.iso"
+
+# VM boot variables
+vm_cpus="1"              # Number of VM virtual CPUs (max 16) (required)
+vm_ram="1024"            # VM RAM Allocation in MB (required)
+vm_console="nmdm"        # stdio, nmdm, tmux or tmux-detached (required)
+virtio_type="ahci-hd"    # "ahci-hd" or "virtio-blk" (required)
+vm_hostbridge=""         # "amd_" for the AMD hostbridge
+bhyve_flags=""           # Additional bhyve(8) flags
+grub_boot_cmd=""         # grub-bhyve command to boot from IMG
+grub_iso_cmd=""          # grub-bhyve command to boot from ISO
+
+# Optional existing boot device in /dev/ i.e. "ada2"
+vm_device=""             # Existing bootable block device (sans /dev/)
+
+# FreeBSD-specific VM provisioning variables
+vm_dev_type="img"        # "img", "malloc", "zvol" or blank for other device
+vm_dev_util="gpart"      # Partitioning tool "fdisk" or "gpart" (FreeBSD only)
+vm_dev_layout="gpt"      # "gpt" or "mbr" volume layout (FreeBSD only)
+vm_dev_fs="ufs"          # "ufs" or "zfs" (FreeBSD only)
+vm_dev_size="2G"         # M or G for raw "img" volumes (FreeBSD only)
+vm_pool="cesspool"       # VM ZFS pool name (FreeBSD only)
+vm_timezone="America/Los_Angeles" # VM timezone (FreeBSD only)
+vm_hostname="bhyve"      # VM hostname (FreeBSD only)
+vm_ipv4="192.168.2.211"  # VM IPv4 address (blank for DHCP) (FreeBSD only)
+vm_gw="192.168.2.1"      # VM IPv4 gateway (FreeBSD only)
+vm_searchdomain="bsd.lv" # VM resolv.conf searchdomain (FreeBSD only)
+vm_dns="8.8.8.8"         # VM resolv.conf IPv4 DNS server (FreeBSD only)
+vm_password="bsd"        # VM password (clear text for now) (FreeBSD only)
+vm_distsets="base.txz kernel.txz"
+#vm_pkgs=""
+# Additional NICs and DEVs
+# zpool template

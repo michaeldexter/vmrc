@@ -20,24 +20,24 @@
 #
 # Very quick, very dirty
 
-ISOSITE="http://people.freebsd.org/~grehan/"
-ISOIMG="flashimg.amd64-20131014.bz2"
+IMGSITE="http://people.freebsd.org/~grehan/"
+IMG="flashimg.amd64-20131014.bz2"
 EXPANDED="flashimg.amd64-20131014"
 
-mkdir -p /usr/local/vm/distributions/openbsd
+mkdir -p /usr/local/vmrc/vm/distributions/openbsd
 
-if [ ! -f /usr/local/vm/distributions/openbsd/$ISOIMG ]; then
-	echo "Fetching $ISOIMG"
-	fetch $ISOSITE$ISOIMG -o /usr/local/vm/distributions/openbsd/
+if [ ! -f /usr/local/vmrc/vm/distributions/openbsd/$IMG ]; then
+	echo "$IMG not present. Fetching $IMG"
+	fetch $IMGSITE$IMG -o /usr/local/vmrc/vm/distributions/openbsd/
 fi
 
-if [ ! -f /usr/local/vm/distributions/openbsd/$EXPANDED ]; then
-	echo "Expanding $ISOIMG"
-	bunzip2 --keep /usr/local/vm/distributions/openbsd/$ISOIMG
+if [ ! -f /usr/local/vmrc/vm/distributions/openbsd/$EXPANDED ]; then
+	echo "Expanded $IMG not present. Expanding $IMG"
+	bunzip2 --keep /vmrc/usr/local/vmrc/vm/distributions/openbsd/$IMG
 fi
 
-echo "Copying "$EXPANDED" to /usr/local/vm/openbsd6/openbsd6.img"
-cp -p "/usr/local/vm/distributions/openbsd/$EXPANDED" /usr/local/vm/openbsd6/openbsd6.img
+echo "Copying "$EXPANDED" to /usr/local/vmrc/vm/openbsd6/openbsd6.img"
+cp -p "/usr/local/vmrc/vm/distributions/openbsd/$EXPANDED" /usr/local/vm/openbsd6/openbsd6.img
 
 echo
 echo "The root password is test123"

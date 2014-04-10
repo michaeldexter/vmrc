@@ -1,22 +1,21 @@
-# Example configuration file for a FreeBSD 9.2-STABLE VM named "vm2":
-# /usr/local/vm/vm2/vm2.conf
+# Example configuration file for a pre-fetched FreeNAS VM named "freenas4":
+# /usr/local/vm/freenas4/freenas4.conf
 
 vm_cpus="1"              # Number of VM virtual CPUs (max 16)
-vm_ram="1024"            # VM RAM Allocation in MB
-vm_console="nmdm"       # stdio, nmdm, tmux or tmux-detached (sysutils/tmux)
+vm_ram="4096"            # VM RAM Allocation in MB
+vm_console="nmdm"        # stdio, nmdm, tmux or tmux-detached (sysutils/tmux)
 vm_os_type="freebsd"     # freebsd, openbsd, or linux
-vm_os_ver="9.2-STABLE"   # Exact OS version if auto-fetching
-vm_dev_layout="gpt"      # "gpt" or "mbr" volume layout (FreeBSD only)
+vm_os_ver=""             # Exact OS version if auto-fetching
+vm_dev_layout="mbr"      # "gpt" or "mbr" volume layout (FreeBSD only)
 vm_dev_type="img"        # "img" for image, "zvol" or blank for other device
 vm_device=""             # An existing device (sans /dev/) i.e. "ada1"
-vm_dev_size="2G"         # M or G for raw "img" volumes
-vm_hostname="bhyve"      # VM hostname (FreeBSD only)
-vm_timezone="America/Los_Angeles" # VM timezone (FreeBSD only)
-vm_ipv4_addr="192.168.1.202"      # Experimental for jail use
+vm_dev_size=""           # M or G for raw "img" volumes
+vm_hostname=""           # VM hostname (FreeBSD only)
+vm_timezone=""           # VM timezone (FreeBSD only)
+vm_ipv4_addr=""          # Experimental for jail use
 vm_searchdomain=""       # (FreeBSD only) Commented out below
 vm_dns_addr=""           # (FreeBSD only) Commented out below
-dist_site="ftp://ftp.freebsd.org/pub/FreeBSD/snapshots/amd64/amd64/9.2-STABLE"
-                         # Hostname and directory for binary distribution sets
+dist_site=""             # Hostname and directory for binary distribution sets
 iso_site=""              # Hostname and directory for ISO image 
 iso_img=""               # ISO filename for remote fetch
 grub_boot_cmd=""         # grub-bhyve command to boot from IMG

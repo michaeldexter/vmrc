@@ -1,0 +1,45 @@
+# Blank configuration file for a VM
+
+# VM operating system variables
+vm_os_type="freebsd"     # "freebsd", "openbsd", or "linux" (required)
+vm_os_ver=""             # Exact OS version if auto-fetching (for distributions)
+dist_site=""             # Hostname and directory for binary distribution sets
+iso_site=""              # Hostname and directory for ISO image 
+iso_img=""               # ISO filename for remote fetch
+
+# VM boot variables
+vm_cpus="1"              # Number of VM virtual CPUs (max 16) (required)
+vm_ram="1024"            # VM RAM Allocation in MB (required)
+vm_console="nmdm"        # "stdio", "nmdm", "tmux" or "tmux-detached" (required)
+virtio_type="virtio-blk" # "ahci-hd" or "virtio-blk" (required)
+vm_hostbridge=""         # "amd_" for the AMD hostbridge
+bhyve_flags=""           # Additional bhyve(8) flags
+grub_boot_cmd=""         # grub-bhyve command to boot from IMG
+grub_iso_cmd=""          # grub-bhyve command to boot from ISO
+
+# Optional existing boot device in /dev/ i.e. "ada2"
+vm_device=""             # Existing bootable block device
+vm_devices=""            # Additional full-path disk images or devices
+
+# FreeBSD-specific VM provisioning variables
+vm_dev_type="img"        # "img", "malloc", "zvol" or blank for other device
+vm_dev_util=""           # Partitioning tool "fdisk" or "gpart" (FreeBSD only)
+vm_dev_layout="mbr"      # "gpt" or "mbr" volume layout (FreeBSD only)
+vm_dev_fs=""             # "ufs" or "zfs" (FreeBSD only)
+vm_dev_size=""           # M or G for raw "img" volumes (FreeBSD only)
+vm_pool=""               # VM ZFS pool name (FreeBSD only)
+vm_install_type=""       # "distset" or "makeinstall"
+vm_distsets=""
+vm_srcdir=""
+vm_objdir=""
+vm_timezone=""           # VM timezone (FreeBSD only)
+vm_hostname=""           # VM hostname (FreeBSD only)
+vm_ipv4=""               # VM IPv4 address (blank for DHCP) (FreeBSD only)
+vm_gw=""                 # VM IPv4 gateway (FreeBSD only)
+vm_searchdomain=""       # VM resolv.conf searchdomain (FreeBSD only)
+vm_dns=""                # VM resolv.conf IPv4 DNS server (FreeBSD only)
+vm_password=""           # VM password (clear text for now) (FreeBSD only)
+#vm_pkgs=""
+#vm_mac=""
+# Additional NICs and DEVs
+# zpool template
