@@ -1551,6 +1551,7 @@ vm_jail()
 	1) info "$name: booting VM %s as a jail $vm_names"
 		f_mount
 #		f_readconfig_exit
+		vm_name="$vm_names"
 		. "$host_vmroot/$vm_name/${vm_name}.conf"
 		info "$name: Experimental but should work"
 		info "flags like \"sendmail_enable\", \"inetd_flags\" and"
@@ -1582,6 +1583,7 @@ vm_qemu()
 	;;
 	1) info "$name: booting VM %s under qemu $vm_names"
 #	f_readconfig_exit
+	vm_name="$vm_names"
 	. "$host_vmroot/$vm_name/${vm_name}.conf"
 		type qemu-system-x86_64 > /dev/null 2>&1 ||
 			die "qemu is not installed! (ports/emulators/qemu) Exiting."
@@ -1701,6 +1703,7 @@ vm_provision()
 	;;
 	1) info "$name: provisioning VM $vm_names"
 #	f_readconfig_exit
+	vm_name="$vm_names"
 	. "$host_vmroot/$vm_name/${vm_name}.conf"
 	[ "$vm_os_type" = "freebsd" ] ||
 		die "$name: Not supported on $vm_os_type VMs! Exiting."
