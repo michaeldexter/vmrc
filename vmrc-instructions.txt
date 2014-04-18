@@ -1,11 +1,17 @@
 Copyright (c) 2012-2014 Michael Dexter <editor@callfortesting.org>
-Version: v.0.5
+Version: v.0.6
 
 Thank you for trying vmrc, the Virtual Machine rc script.
 
 If you did NOT just download this, redownload it for the lastest version
 as it is highly-experimental and changing rapidly. See the "TO DO" section
 for known issues and feature ideas.
+
+CHANGES from .0.5 to .0.6
+
+* Introduces multiple VM NIC support. Simply add 1-7 in "vm_addtl_nics"
+* Adds updated pfSense
+* Minor cosmetic cleanup
 
 SIGNIFICANT CHANGES from .0.4 to .0.5
 

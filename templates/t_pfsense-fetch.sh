@@ -43,7 +43,7 @@
 #http://files.nyi.pfsense.org/mirror/downloads/pfSense-2.1.1-RELEASE-2g-amd64-nanobsd.img.gz
 
 echo
-echo "Recent releases: 2.1, 2.1.1"
+echo "Recent releases: 2.1, 2.1.2"
 echo
 echo "Enter a release to fetch:"
 echo

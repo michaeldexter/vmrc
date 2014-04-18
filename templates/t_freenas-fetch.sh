@@ -1,5 +1,5 @@
 #!/bin/sh
-# Version: v.0.5
+# Version: v.0.6
 
 # Copyright (c) 2013-2014 Michael Dexter <editor@callfortesting.org>
 #
@@ -32,7 +32,7 @@
 # March 2014 Scheme:
 #http://download.freenas.org/9.2.1.3/RELEASE/x64/FreeNAS-9.2.1.3-RELEASE-x64.iso 
 echo
-echo "Recent releases: 8.3.2 9.2.1.4"
+echo "Recent releases: 8.3.2 9.2.1.3"
 echo
 echo "Enter a release to fetch:"
 echo

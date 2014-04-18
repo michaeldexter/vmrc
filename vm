@@ -19,7 +19,7 @@
 ############################################################ INFORMATION
 #
 # $Title: virtual machine management script $
-# $Version: v.0.5$
+# $Version: v.0.6$
 #
 # rc(8) command script for managing virtual machines.
 #
@@ -413,12 +413,10 @@ preflight.sh"
 # Setting up VM PCI devices:
 # 0 hostbridge
 # 2 boot device
-# 3 first NIC
+# 3:0-8 virtual network devices
 # 4 optional ISO
 # 5 console
 # 6:0-8? additional storage devices
-## 7:0-8? additional tap devices
-
 
 	case "$vm_dev_type" in
 	img)
@@ -455,19 +453,7 @@ preflight.sh"
 	;;
 esac
 
-	info "$funcname: Starting Networking. \"File Exists\" warnings okay."
-#	ifconfig "tap$vm_id" down
-# fix: disabled to stop lag after destroy
-#	ifconfig "tap$vm_id" destroy
-# fix: check for the tap device first?
-#	if ! ifconfig -l | grep -qwF "tap${vm_id}"; then
-		info "$funcname: ifconfig tap${vm_id} create"
-		ifconfig "tap$vm_id" create
-		ifconfig "bridge$host_bridge" addm "tap$vm_id" addm "$host_nic" up
-#		ifconfig "tap$vm_id" up # trying sysctl net.link.tap.up_on_open=1
-#		fi
-
-	local console_flags=
+	local console_flags=""
 	case "$vm_console" in
 	nmdm) console_flags="-s 5,lpc -l com1,/dev/nmdm${vm_id}A" ;;
 	   *) console_flags="-s 5,lpc -l com1,stdio"
@@ -477,9 +463,7 @@ esac
 	[ "$ISO_BOOT" = "isobootyes" ] &&
 		iso_flags="-s 4,ahci-cd,${host_vmdir}/${vm_name}/${vm_name}.iso"
 
-### New code for multiple devices beyond the primary boot device ###
-
-	local device_flags=
+	local device_flags=""
 	if [ -n "$vm_devices" ]; then
 		echo "Additional devices requested: $vm_devices"
 #		device_flags=""
@@ -488,40 +472,37 @@ esac
 			if [ ! -e ${device} ]; then
 				echo "$device not found. Skipping..."
 			else
-#	device_flags="$device_flags -s ${dev_count},${virtio_type},${device}"
 device_flags="$device_flags -s 6:${dev_count},${virtio_type},${device}"
 		dev_count=$((dev_count+1))
 			fi
 		done
 	fi
 
-# Must auto-request tap devices to be safe and not step on existing ones
-# One based on VM ID is good. Multiple ones pose a problem
-# Colon notation?!? ${vm_id}:${new_one...
-# get_free_tap_dev ? If auto-chosen, could we see which VM they are tied to?
-# ifconfig: Opened by PID 36031 / ps... VM name!
-# Note ifconfig -l to list devices
-#ifconfig "tap$vm_id" create
-#ifconfig "bridge$host_bridge" addm "tap$vm_id" addm "$host_nic" up
+# MULTIPLE NIC ACROBATICS:
+# vm3 has a default NIC of tap8030 NIC on PCI 3:0, tap8031 is NIC 1 on PCI 3:1
+# WHY 8 you might ask? ifconfig can't take "tap020". 8 = infinity...
 
-### Not so easy for additional network devices - needs help ###
+info "$funcname: Starting Networking. \"File exists\" warnings okay."
+tap_base_id=$vm_id
+# Need more than 100 VMs? change to %03i
+tap_id="$(printf "%02i" "$tap_base_id")" # vm2 "2" -> 02 for tap8020
+tap_unit=0
+nic_flags="-s 3:0,virtio-net,tap8$tap_id$tap_unit" # Default first NIC
 
-#        if [ -n "$vm_nics" ]; then
-#                echo "Additional devices requested: $vm_nics"
-#                nic_flags=""
-#                dev_count=0
-#                for nic in $vm_nics; do
-#                        if [ ! -e ${nic} ]; then
-#                                echo "$nic not found. Skipping..."
-#                        else
-#        nic_flags="$nic_flags -s 7:${dev_count},virtio-net,tap${dev_count}"
-#                dev_count=$((dev_count+1))
-#                        fi
-#                done
-#        fi
+	if [ ${vm_addtl_nics:-0} -gt 0 ]; then # if "" or "0"
+		while [ $tap_unit -lt $vm_addtl_nics ]; do
+			tap_unit=$((tap_unit+1))
+	nic_flags="$nic_flags -s 3:${tap_unit},virtio-net,tap8$tap_id$tap_unit"
+# Informational info or echo commands are not working here
+        ifconfig "tap8$tap_id$tap_unit" create
+ifconfig "bridge$host_bridge" addm "tap8$tap_id$tap_unit" addm $host_nic up
+		done
+	fi
 
 # fix: note: NO indenting for attractive bhyve command output
 # fix: Any way to remove double spaces?
+
+# THE ACTUAL BHYVE COMMAND #
 
 bhyve_cmd="/usr/sbin/bhyve \
 -c "$vm_cpus" \
@@ -529,19 +510,20 @@ bhyve_cmd="/usr/sbin/bhyve \
 "$bhyve_flags" \
 -s "0,${vm_hostbridge}hostbridge" \
 -s "2,$virtio_type,$vm_device" \
--s "3,virtio-net,tap$vm_id" \
+"$nic_flags" \
 "$iso_flags" \
 "$console_flags" \
 "$device_flags" \
-"$nic_flags" \
 "$vm_name"
 "
-# fix: Note: PCI devices can be single digit 0, or 0:0
-# This can be used for additional devices
+
+# Was -s "3,virtio-net,tap$vm_id" \ before multiple NIC syntax
+# Note: PCI devices can be single digit 0, or 0:0
 # fix: Hint: ps -ww is your friend when debugging tmux command execution
 
+	echo
 	info "the bhyve command will be"
-	     info "$bhyve_cmd"
+	info "$bhyve_cmd"
 
 	case "$vm_console" in
 	stdio)
