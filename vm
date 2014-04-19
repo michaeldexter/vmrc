@@ -411,12 +411,16 @@ preflight.sh"
         fi
 
 # Setting up VM PCI devices:
+
 # 0 hostbridge
-# 2 boot device
-# 3:0-8 virtual network devices
-# 4 optional ISO
+# 2 boot block device
+# 3:0-7 virtual network devices
+# 4 optional ISO block device
 # 5 console
-# 6:0-8? additional storage devices
+# 6:0-7 additional storage devices
+
+# Note: PCI devices can be single digit 0, or 0:0 with a limit of 8 total
+# Simply add another device if 8 is not enough: 7:[0-7] etc.
 
 	case "$vm_dev_type" in
 	img)
@@ -480,11 +484,12 @@ device_flags="$device_flags -s 6:${dev_count},${virtio_type},${device}"
 
 # MULTIPLE NIC ACROBATICS:
 # vm3 has a default NIC of tap8030 NIC on PCI 3:0, tap8031 is NIC 1 on PCI 3:1
-# WHY 8 you might ask? ifconfig can't take "tap020". 8 = infinity...
+# WHY 8 you might ask? ifconfig can't take "tap020" so we use "tap8020".
+# 8 represents infinity... The middle digits represent the VM ID in the tap dev.
+# Need more than 100 VMs? change %02i to %03i to make it a 3 digit VM ID.
 
 info "$funcname: Starting Networking. \"File exists\" warnings okay."
 tap_base_id=$vm_id
-# Need more than 100 VMs? change to %03i
 tap_id="$(printf "%02i" "$tap_base_id")" # vm2 "2" -> 02 for tap8020
 tap_unit=0
 nic_flags="-s 3:0,virtio-net,tap8$tap_id$tap_unit" # Default first NIC
@@ -518,7 +523,6 @@ bhyve_cmd="/usr/sbin/bhyve \
 "
 
 # Was -s "3,virtio-net,tap$vm_id" \ before multiple NIC syntax
-# Note: PCI devices can be single digit 0, or 0:0
 # fix: Hint: ps -ww is your friend when debugging tmux command execution
 
 	echo

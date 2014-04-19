@@ -10,6 +10,8 @@ for known issues and feature ideas.
 CHANGES from .0.5 to .0.6
 
 * Introduces multiple VM NIC support. Simply add 1-7 in "vm_addtl_nics"
+in the VM configuration file. This introduced a limit of 100 VM's but
+that can be increased with a documented, one-character change.
 * Adds updated pfSense
 * Minor cosmetic cleanup
 
@@ -188,6 +190,62 @@ A few GNU/Linux-related features did not make it into the FreeBSD 10.0 release:
 
 >3000M RAM support
 The -w flag for better CentOS and RHEL performance
+
+
+### DEVELOPER NOTES ###
+
+GitHub: https://github.com/michaeldexter/vmrc
+
+While patches are welcome, please take the time to understand how this script
+works before proposing solutions to problems that might be more complex than
+they appear. Ask questions!
+
+vmrc aims to have zero dependencies to operate. It optionally uses external
+utilities like grub2-bhyve, tmux, qemu and the like to add functionality but
+will hopefully never depend on them.
+
+The vm rc script and mkvm.sh perform two key functions:
+
+1. Programmatically construct virtual machine boot devices (mkvm.sh/"iso" mode)
+2. Manage the lifecycle operation of the virtual machines it creates
+
+A "Virtual Machine" is comprised of a directory containing a bootable disk
+image, a configuration file derived from a template, a mnt/ directory for the
+attachment and mounting of the disk image (FreeBSD only) and an optional
+preflight script.
+
+mkvm.sh is largely a simplified FreeBSD installer that is comprised of
+functions.
+
+The vm rc script largely creates bhyveload(8) and bhyve(8) command syntax for
+loading and booting virtual machines based on the criteria in the configuration
+files such as the VM RAM allocation, block device to boot, network interfaces
+etc. The vm rc script will output the bhyveload and bhyve command strings that
+it generates prior to executing them. If you copy these out, they should work
+on their own along with the preflight script if included.
+
+Each VM directory in /usr/local/vmrc/vm/ is fully self-contained and is
+only referenced by the vm script looking for VMs in the vm/ directory and then
+using the unique numeric VM ID number at the end of the virtual machine.
+
+For example: vm0 has the arbitrary name of "vm" and the VM ID of "0". VMs can
+share the same name (vm0, vm1, vm2) but must have a unique ID (vm0, freenas1,
+openbsd3). VMs vm0 and linux0 would have conflicting VM IDs.
+
+This naming is extended to the contents of the vm/ directory (vm/vm0/vm0.img)
+
+The VM ID is used to generate unique, non-conflicting tap# network interfaces.
+
+With the introduction of multiple VM virtual network devices, a new convention
+was needed to keep VM tap devices unique while preserving their obvious
+association with a given VM. The solution is to add a suffix to the tap device,
+indicating the NIC ID (vm0's tap0 -> tap01 or vm3's tap3 ->tap31).
+
+This revealed a problem: ifconfig will now allow for tap ID's to be
+prefixed with "0" and thus vm0's tap03 would be invalid. To solve this, we use
+a double digit VMID that is prefixed with the arbitrary "8", resulting in vm0's
+fourth network interface being tap8033 (8 | VM ID | Network Device ID).
+Network device "3" is the fourth device because the first one is "0".
 
 
 ### SPECIAL THANKS ###
