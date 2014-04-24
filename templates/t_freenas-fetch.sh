@@ -147,6 +147,7 @@ echo
 echo "WARNING: 8.3.2 does not appear to like the if_vtnet driver"
 fi
 
+echo
 echo "Unmounting $MNT"
 umount $MNT
 echo

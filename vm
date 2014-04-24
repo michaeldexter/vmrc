@@ -167,28 +167,51 @@ f_grubcheck()
 
 # f_netstart
 #
-# Create bridge0 device (loading required kernel modules) if it doesn't exist.
+# Create bridgeX device (loading required kernel modules) if it doesn't exist.
 #
 f_netstart()
 {
 	local funcname=f_netstart
 
-	info "Entering $funcname()"
-	info "Checking for sysctl -n net.link.tap.up_on_open"
-	if [ $(sysctl -n net.link.tap.up_on_open) = "0" ]; then
+# Just in case
+. /usr/local/etc/vm.conf
+
+        if ! kldstat | grep -qwF bridgestp.ko; then
+                info "$funcname: bridgestp.ko kernel module not loaded. Loading..."
+                kldload bridgestp || die
+        else
+                info "$funcname: bridgestp.ko is loaded."
+        fi
+
+        if ! kldstat | grep -qwF if_bridge.ko; then
+                info "$funcname: if_bridge.ko kernel module not loaded. Loading..."
+                kldload if_bridge || die
+        else
+                info "$funcname: if_bridge.ko is loaded."
+        fi
+
+        if ! kldstat | grep -qwF if_tap.ko; then
+                info "$funcname: if_tap.ko kernel module not loaded. Loading..."
+                kldload if_tap || die
 		sysctl net.link.tap.up_on_open=1
+        else
+                info "$funcname: if_tap.ko is loaded."
+        fi
+
+	if ! ifconfig -l | grep -qwF bridge${host_bridge}; then
+		info "Creating the bridge${host_bridge} network interface."
+		ifconfig bridge${host_bridge} create || die
+		ifconfig bridge${host_bridge} up || die
+	else
+		info "$funcname: bridge$host_bridge exists."
 	fi
 
-	if ! ifconfig -l | grep -qwF "bridge$host_bridge"; then
-		info "Assuming %s kernel modules are not loaded." \
-		     "if_tap, bridgestp, and if_bridge"
-		info "Loading..."
-		kldload if_tap
-		kldload bridgestp
-		kldload if_bridge
-		info "Creating the bridge$host_bridge network interface."
-		ifconfig "bridge$host_bridge" create || die
-		ifconfig "bridge$host_bridge" up || die
+	if ! ifconfig bridge${host_bridge} | grep ${host_nic}; then
+		info "Associating $host_nic with bridge${host_bridge}."
+echo "Running: ifconfig bridge${host_bridge} addm ${host_nic} up"
+                ifconfig bridge${host_bridge} addm ${host_nic} up || die
+	else
+		info "$funcname: $host_nic is assoc. with host${host_bridge}."
 	fi
 }
 
@@ -485,22 +508,38 @@ device_flags="$device_flags -s 6:${dev_count},${virtio_type},${device}"
 # MULTIPLE NIC ACROBATICS:
 # vm3 has a default NIC of tap8030 NIC on PCI 3:0, tap8031 is NIC 1 on PCI 3:1
 # WHY 8 you might ask? ifconfig can't take "tap020" so we use "tap8020".
-# 8 represents infinity... The middle digits represent the VM ID in the tap dev.
-# Need more than 100 VMs? change %02i to %03i to make it a 3 digit VM ID.
+# 8 represents infinity... The middle digits represent the VM ID in the tap dev
 
-info "$funcname: Starting Networking. \"File exists\" warnings okay."
+info "$funcname: Starting VM Networking. \"File exists\" warnings are okay."
+
+# Recall that the bridge was created with f_netstart
+tap_prefix=8
 tap_base_id=$vm_id
 tap_id="$(printf "%02i" "$tap_base_id")" # vm2 "2" -> 02 for tap8020
-tap_unit=0
-nic_flags="-s 3:0,virtio-net,tap8$tap_id$tap_unit" # Default first NIC
+tap_unit=0 #Additional vtnet PCI device and tap device suffix
 
-	if [ ${vm_addtl_nics:-0} -gt 0 ]; then # if "" or "0"
-		while [ $tap_unit -lt $vm_addtl_nics ]; do
-			tap_unit=$((tap_unit+1))
-	nic_flags="$nic_flags -s 3:${tap_unit},virtio-net,tap8$tap_id$tap_unit"
-# Informational info or echo commands are not working here
-        ifconfig "tap8$tap_id$tap_unit" create
-ifconfig "bridge$host_bridge" addm "tap8$tap_id$tap_unit" addm $host_nic up
+
+### WE REALLY SHOULD CHECK FOR THESE BEFORE ADDING THEM ###
+# and not say "File exists" warnings are okay...
+
+# Initialize the first VM NIC
+echo "Running: ifconfig tap${tap_prefix}${tap_id}${tap_unit} create"
+ifconfig tap${tap_prefix}${tap_id}${tap_unit} create
+nic_flags="-s 3:${tap_unit},virtio-net,tap${tap_prefix}${tap_id}${tap_unit}"
+echo "Running: ifconfig bridge${host_bridge} addm tap${tap_prefix}${tap_id}${tap_unit} up"
+ifconfig bridge${host_bridge} addm tap${tap_prefix}${tap_id}${tap_unit} up
+
+# Check for additional requested VM NICs and create
+	if [ ${vm_addtl_nics:-0} -gt 0 ]; then # if gt "" or "0" additional nics
+		echo "$vm_addtl_nics additional virtual NICs requested"
+		while [ $tap_unit -lt $vm_addtl_nics ]; do # start at unit 0
+			tap_unit=$((tap_unit+1)) # increment it
+nic_flags="$nic_flags -s 3:${tap_unit},virtio-net,tap${tap_prefix}${tap_id}${tap_unit}"
+# Informational info or echo commands are not working here because of the loop?
+echo "Running: ifconfig tap${tap_prefix}${tap_id}${tap_unit} create"
+		ifconfig tap${tap_prefix}${tap_id}${tap_unit} create
+echo "Running: ifconfig bridge${host_bridge} addm tap${tap_prefix}${tap_id}${tap_unit} up"
+ifconfig bridge${host_bridge} addm tap${tap_prefix}${tap_id}${tap_unit} up
 		done
 	fi
 
@@ -526,7 +565,7 @@ bhyve_cmd="/usr/sbin/bhyve \
 # fix: Hint: ps -ww is your friend when debugging tmux command execution
 
 	echo
-	info "the bhyve command will be"
+	info "the bhyve command will be:"
 	info "$bhyve_cmd"
 
 	case "$vm_console" in
@@ -594,6 +633,8 @@ f_stop()
 		info "$funcname: Destroying $vm_name"
 		/usr/sbin/bhyvectl --destroy --vm="$vm_name" > /dev/null 2>&1
 		info "%s destroyed with bhyvectl --destroy" "$vm_name"
+# fix: Note that this now supports multiple tap devices and we should
+# remove tap members from the bridge first
 #		info "$funcname: Destroying %s" "tap$vm_id"
 #		ifconfig "tap$vm_id" destroy
 
@@ -647,6 +688,7 @@ f_destroy()
 		info "$funcname: Destroying $vm_name"
 		/usr/sbin/bhyvectl --destroy --vm="$vm_name" > /dev/null 2>&1
 		info "%s destroyed with bhyvectl --destroy" "$vm_name"
+# fix: remove tap members from the bridge, then destroy. See above
 #		info "$funcname: Destroying %s" "tap$vm_id"
 # fix: disabled to stop lag after destroy
 #		ifconfig "tap$vm_id" destroy
