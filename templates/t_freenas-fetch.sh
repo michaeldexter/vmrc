@@ -32,7 +32,7 @@
 # March 2014 Scheme:
 #http://download.freenas.org/9.2.1.3/RELEASE/x64/FreeNAS-9.2.1.3-RELEASE-x64.iso 
 echo
-echo "Recent releases: 8.3.2 9.2.1.4.1"
+echo "Recent releases: 8.3.2 9.2.1.5"
 echo
 echo "Enter a release to fetch:"
 echo
