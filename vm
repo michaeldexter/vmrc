@@ -543,6 +543,10 @@ preflight.sh"
                 echo
         fi
 
+# Hypothetical usage of the preflight script:
+# 1. Create malloc devices for use as the boot or additional devices
+# 2. Create an additional bridge and reassign the tapXXXX devices to it
+
 # fix: note: NO indenting for attractive bhyve command output
 # fix: Any way to remove double spaces?
 
