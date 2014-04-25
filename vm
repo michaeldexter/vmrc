@@ -423,16 +423,6 @@ f_boot()
 		return
 	fi
 
-# Experimental: Run a preflight script to set up devices etc.
-        echo "Checking for preflight script ${host_vmdir}/${vm_name}/${vm_name}.
-preflight.sh"
-        if [ -f "${host_vmdir}/${vm_name}/${vm_name}.preflight.sh" ]; then
-                echo "Running ${vm_name}.preflight.sh script"
-                sh ${host_vmdir}/${vm_name}/${vm_name}.preflight.sh
-                echo "Done running ${vm_name}.preflight.sh script"
-                echo
-        fi
-
 # Setting up VM PCI devices:
 
 # 0 hostbridge
@@ -542,6 +532,16 @@ echo "Running: ifconfig bridge${host_bridge} addm tap${tap_prefix}${tap_id}${tap
 ifconfig bridge${host_bridge} addm tap${tap_prefix}${tap_id}${tap_unit} up
 		done
 	fi
+
+# Experimental: Run a preflight script to set up devices, bridges etc.
+        echo "Checking for preflight script ${host_vmdir}/${vm_name}/${vm_name}.
+preflight.sh"
+        if [ -f "${host_vmdir}/${vm_name}/${vm_name}.preflight.sh" ]; then
+                echo "Running ${vm_name}.preflight.sh script"
+                sh ${host_vmdir}/${vm_name}/${vm_name}.preflight.sh
+                echo "Done running ${vm_name}.preflight.sh script"
+                echo
+        fi
 
 # fix: note: NO indenting for attractive bhyve command output
 # fix: Any way to remove double spaces?
