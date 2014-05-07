@@ -1,5 +1,5 @@
 Copyright (c) 2012-2014 Michael Dexter <editor@callfortesting.org>
-Version: v.0.6
+Version: v.0.6.1
 
 Thank you for trying vmrc, the Virtual Machine rc script.
 
@@ -37,7 +37,13 @@ that require VirtIO and console adjustments prior to booting under bhyve.
 
 ### CHEAT SHEET ###
 
-Unpack vmrc.tar
+Unpack vmrc.tar or retrieve the latest version from GitHub:
+
+https://github.com/michaeldexter/vmrc
+
+
+## FreeBSD VMs ##
+
 Run 'sh install-vmrc.sh' or read it and perform the steps manually.
 
 Run templates/install-templates.sh to install all templates into:
@@ -76,6 +82,14 @@ Alternatively there is "ISO" mode:
 
 "ISO" mode will prepare a disk image to install the OS to and includes fetch
 support for FreeBSD, Ubuntu and CentOS.
+
+
+## Linux VMs ##
+
+Copy a template to a VM directory such as /usr/local/vmrc/vm/linux0/linux0.cfg
+and use "ISO" mode:
+
+/usr/local/etc/rc.d/vm iso linux0
 
 
 ### COMMAND USAGE ###
