@@ -109,7 +109,7 @@ die()
 #
 f_timestamp()
 {
-echo $( date "+%Y-%m-%d %H:%M:%S:" )
+echo $( date "+%Y-%m-%d %H:%M:%S:" ) # Perhaps insert a newline
 }
 
 # f_eptcheck
