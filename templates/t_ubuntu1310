@@ -20,9 +20,9 @@ iso_site="ftp://ftp.osuosl.org/pub/ubuntu-releases/13.10/"
                          # Hostname and directory for ISO image 
 iso_img="ubuntu-13.10-server-amd64.iso"
                          # ISO filename for remote fetch
-grub_boot_cmd="grub-bhyve -r hd0,msdos1 -m ${host_vmroot}/${vm_name}/device.map -M $vm_ram $vm_name"
+grub_boot_cmd="/usr/local/sbin/grub-bhyve -r hd0,msdos1 -m ${host_vmroot}/${vm_name}/device.map -M $vm_ram $vm_name"
                          # grub-bhyve command to boot from IMG
-grub_iso_cmd="grub-bhyve -r cd0 -m ${host_vmroot}/${vm_name}/device.map -M $vm_ram $vm_name"
+grub_iso_cmd="/usr/local/sbin/grub-bhyve -r cd0 -m ${host_vmroot}/${vm_name}/device.map -M $vm_ram $vm_name"
                          # grub-bhyve command to boot from ISO
 vm_hostbridge=""         # "amd_" for the AMD hostbridge
 bhyve_flags=""           # Additional bhyve(8) flags

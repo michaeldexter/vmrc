@@ -18,9 +18,9 @@ vm_dns_addr=""           # (FreeBSD only) Commented out below
 dist_site=""             # Hostname and directory for binary distribution sets
 iso_site=""              # Hostname and directory for ISO image 
 iso_img=""               # ISO filename for remote fetch
-grub_boot_cmd="echo -e \"kopenbsd -h com0 (hd0,openbsd1)/bsd\nboot\" | grub-bhyve -r hd0 -m ${host_vmroot}/${vm_name}/device.map -M $vm_ram $vm_name"
+grub_boot_cmd="echo -e \"kopenbsd -h com0 (hd0,openbsd1)/bsd\nboot\" | /usr/local/sbin/grub-bhyve -r hd0 -m ${host_vmroot}/${vm_name}/device.map -M $vm_ram $vm_name"
                          # grub-bhyve command to boot from IMG
-grub_iso_cmd="echo -e \"kopenbsd -h com0 (cd0)/5.4/amd64/bsd\nboot\" | grub-bhyve -r cd0 -m ${host_vmroot}/${vm_name}/device.map -M $vm_ram $vm_name"
+grub_iso_cmd="echo -e \"kopenbsd -h com0 (cd0)/5.4/amd64/bsd\nboot\" | /usr/local/sbin/grub-bhyve -r cd0 -m ${host_vmroot}/${vm_name}/device.map -M $vm_ram $vm_name"
                          # grub-bhyve command to boot from ISO
 vm_hostbridge="amd_"     # "amd_" for the AMD hostbridge
 bhyve_flags="-W"         # Additional bhyve(8) flags

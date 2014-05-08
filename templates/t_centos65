@@ -17,9 +17,9 @@ vm_console="nmdm"        # "stdio", "nmdm", "tmux" or "tmux-detached" (required)
 virtio_type="virtio-blk" # "ahci-hd" or "virtio-blk" (required)
 vm_hostbridge=""         # "amd_" for the AMD hostbridge
 bhyve_flags="-w"         # Additional bhyve(8) flags
-grub_boot_cmd="echo -e \"linux /vmlinuz-2.6.32-431.el6.x86_64 ro root=/dev/mapper/VolGroup-lv_root\ninitrd /initramfs-2.6.32-431.el6.x86_64.img\nboot\" | grub-bhyve -r hd0,msdos1 -m "${host_vmroot}/${vm_name}/device.map" -M "$vm_ram" "$vm_name""
+grub_boot_cmd="echo -e \"linux /vmlinuz-2.6.32-431.el6.x86_64 ro root=/dev/mapper/VolGroup-lv_root\ninitrd /initramfs-2.6.32-431.el6.x86_64.img\nboot\" | /usr/local/sbin/grub-bhyve -r hd0,msdos1 -m "${host_vmroot}/${vm_name}/device.map" -M "$vm_ram" "$vm_name""
                          # grub-bhyve command to boot from IMG
-grub_iso_cmd="echo -e \"linux /isolinux/vmlinuz text\ninitrd /isolinux/initrd.img\nboot\" | grub-bhyve -r cd0 -m "${host_vmroot}/${vm_name}/device.map" -M "$vm_ram" "$vm_name""
+grub_iso_cmd="echo -e \"linux /isolinux/vmlinuz text\ninitrd /isolinux/initrd.img\nboot\" | /usr/local/sbin/grub-bhyve -r cd0 -m "${host_vmroot}/${vm_name}/device.map" -M "$vm_ram" "$vm_name""
                          # grub-bhyve command to boot from ISO
 
 # Optional existing boot device in /dev/ i.e. "ada2"

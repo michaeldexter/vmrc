@@ -903,7 +903,7 @@ f_grub()
 	echo "(hd0) ${host_vmdir}/${vm_name}/${vm_name}.img" > "${host_vmdir}/${vm_name}/device.map"
 	echo "(cd0) ${host_vmdir}/${vm_name}/${vm_name}.iso" >> "${host_vmdir}/${vm_name}/device.map"
 	cat "${host_vmdir}/${vm_name}/device.map"
-	grub_cmd="grub-bhyve -m "${host_vmdir}/${vm_name}/device.map" -M "$vm_ram" "$vm_name""
+	grub_cmd="/usr/local/sbin/grub-bhyve -m "${host_vmdir}/${vm_name}/device.map" -M "$vm_ram" "$vm_name""
 	info "$funcname: Running the bhyveload command:\n%s" \
 		"$grub_cmd"
 		local timestamp=$( f_timestamp )
