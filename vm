@@ -103,6 +103,15 @@ die()
 	exit 1
 }
 
+# f_timestamp
+#
+# A simple invocation of 'date' for use with logging. Modify as you please.
+#
+f_timestamp()
+{
+echo $( date "+%Y-%m-%d %H:%M:%S:" )
+}
+
 # f_eptcheck
 #
 # Check CPU for EPT feature flag. Causes premature termination with error
@@ -386,6 +395,8 @@ f_load()
 		bhyveload_cmd="/usr/sbin/bhyveload -m $vm_ram -d $vm_device $vm_name"
 		info "$funcname: Running the bhyveload command:\n%s" \
 		     "$bhyveload_cmd"
+        local timestamp=$( f_timestamp )
+        echo "$timestamp $bhyveload_cmd" >> ${host_vmdir}/${vm_name}/${vm_name}.log
 		eval "$bhyveload_cmd"
 	else
 		f_grubcheck
@@ -396,6 +407,8 @@ f_load()
 		cat "${host_vmdir}/${vm_name}/device.map"
 		info "$funcname: Running the grub command:\n%s" \
 		     "$grub_boot_cmd"
+        local timestamp=$( f_timestamp )
+        echo "$timestamp $grub_boot_cmd" >> ${host_vmdir}/${vm_name}/${vm_name}.log
 		eval "$grub_boot_cmd"
 	fi
 
@@ -570,9 +583,10 @@ bhyve_cmd="/usr/sbin/bhyve \
 # fix: Hint: ps -ww is your friend when debugging tmux command execution
 
 	echo
-	info "the bhyve command will be:"
-	info "$bhyve_cmd"
-
+	info "$funcname: Running the bhyveload command:\n%s" \
+	"$bhyveload_cmd"
+	local timestamp=$( f_timestamp )
+	echo "$timestamp $bhyve_cmd" >> ${host_vmdir}/${vm_name}/${vm_name}.log
 	case "$vm_console" in
 	stdio)
 # fix: clean up is run upon bhyve exit:
@@ -591,7 +605,7 @@ bhyve_cmd="/usr/sbin/bhyve \
 		     "$vm_name" "$vm_id"
 #		eval "$bhyve_cmd" &
 ( trap "f_stop" EXIT; eval "$bhyve_cmd" ) &
-#		eval "$bhyve_cmd" > "${host_vmdir}/${vm_name}/output.log"
+#		echo "$bhyve_cmd" > "${host_vmdir}/${vm_name}/output.log"
 #		eval "$bhyve_cmd" > /dev/null 2>&1 # Or direct to a logfile
 		;;
 	tmux)
@@ -854,6 +868,8 @@ f_iso()
 				${host_vmdir}/${vm_name}/${vm_name}.iso $vm_name"
 			info "$funcname: Running the bhyveload command:\n%s" \
 			     "$bhyveload_cmd"
+        local timestamp=$( f_timestamp )
+        echo "$timestamp $bhyveload_cmd" >> ${host_vmdir}/${vm_name}/${vm_name}.log
 			eval "$bhyveload_cmd"
 		else
 			info "$funcname: Creating ${host_vmdir}/${vm_name}/device.map"
@@ -862,6 +878,8 @@ f_iso()
 			cat "${host_vmdir}/${vm_name}/device.map"
 			info "$funcname: Running the ISO grub command:\n%s" \
 			     "$grub_iso_cmd"
+        local timestamp=$( f_timestamp )
+        echo "$timestamp $grub_iso_cmd" >> ${host_vmdir}/${vm_name}/${vm_name}.log
 			eval "$grub_iso_cmd"
 		fi
 	fi
@@ -888,6 +906,8 @@ f_grub()
 	grub_cmd="grub-bhyve -m "${host_vmdir}/${vm_name}/device.map" -M "$vm_ram" "$vm_name""
 	info "$funcname: Running the bhyveload command:\n%s" \
 		  "$grub_cmd"
+        local timestamp=$( f_timestamp )
+        echo "$timestamp $grub_cmd" >> ${host_vmdir}/${vm_name}/${vm_name}.log
 	eval "$grub_cmd"
 }
 
@@ -1579,6 +1599,8 @@ vm_jail()
 ip4.addr=$vm_ipv4 command=/bin/sh
 		" # END-QUOTE
 		info "$name: Running the jail(8) command:\n%s" "$jail_cmd"
+        local timestamp=$( f_timestamp )
+        echo "$timestamp $jail_cmd" >> ${host_vmdir}/${vm_name}/${vm_name}.log
 		eval "$jail_cmd"
 		f_umount
 	;;
