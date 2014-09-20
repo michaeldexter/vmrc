@@ -1,0 +1,15 @@
+patch
+
++.if ${MK_ZFS} != "no"
++CFLAGS+=       -DUSERBOOT_ZFS_SUPPORT
++LIBZFS=                ${.OBJDIR}/../zfs/libzfsboot.a
++.endif
+
+/usr/src/sys/boot/userboot/userboot/Makefile
+.if ${MK_ZFS} != "no"
+CFLAGS+=        -DUSERBOOT_ZFS_SUPPORT
+LIBZFSBOOT=     ${.OBJDIR}/../zfs/libzfsboot.a
+.endif
+
+
+

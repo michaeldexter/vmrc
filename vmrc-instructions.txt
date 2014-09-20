@@ -1,11 +1,48 @@
-Copyright (c) 2012-2014 Michael Dexter <editor@callfortesting.org>
-Version: v.0.6.1
+################################################################ LICENSE
+#
+# Copyright (c) 2012-2014 Michael Dexter <editor@callfortesting.org>
+#
+# Permission to use, copy, modify, and distribute this software for any
+# purpose with or without fee is hereby granted, provided that the above
+# copyright notice and this permission notice appear in all copies.
+#
+# THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+# WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+# MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+# ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+# WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+# ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+# OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+#
+############################################################ INFORMATION
+#
+# Title: virtual machine rc script instructions
+# Version: v.0.7
+#
+# vmrc usage instructions and developer notes
+#
+########################################################################
 
 Thank you for trying vmrc, the Virtual Machine rc script.
 
-If you did NOT just download this, redownload it for the lastest version
-as it is highly-experimental and changing rapidly. See the "TO DO" section
-for known issues and feature ideas.
+Latest development snapshot: http://vmrc.bsd.lv/vmrc-snapshot.tar
+GitHub repository: https://github.com/michaeldexter/vmrc
+
+SIGNIFICANT CHANGES from .0.6.1 to .0.7
+
+* Sweeping restructuring and style changes (400+ line reduction in vm length)
+* Increased tests and VM cleanup upon exit
+* Increased reliance on return codes for continuation logic
+* Some template format changes
+* Improved GRUB support
+* Improved QEMU support
+* Added generated ifconfig_cmd.sh, bhyveload_cmd.sh, bhyve_cmd.sh,
+* grub_cmd.sh and stop_cmd.sh scripts in the VM directory
+* Added zvol support to the 'mount' and 'umount' directives
+* Added raw image (VM-IMAGE/flashrd/FreeNAS/pfSense etc.) install option
+* Added src/obj install option
+* Added fine-grained ZFS feature flag support (11 host would only allow 11 VMs)
+* Added GNU screen support
 
 CHANGES from .0.5 to .0.6
 
@@ -25,94 +62,203 @@ library of functions and templates.
 * Experimental ZFS on root support is included but requires the included
 zfs-boot components or a recent snapshot.
 
-This has come a long way from a 2005 jail(8) provisioning and management script
-to a 2012 FreeBSD 9.0 bhyve build script to a series of sequential FreeBSD 10.*
-VM provisioning and management scripts.
+
+### OVERVIEW ###
+
+This tool has come a long way from a 2005 jail(8) provisioning and management
+script to a 2012 FreeBSD 9.0 bhyve build script to a series of sequential
+FreeBSD 10.* VM provisioning and management scripts.
 
 Because bhyve is only the latest multiplicity solution on FreeBSD, this
-rc script includes basic jail and qemu support and could include chroot, simh
-and GXemul support. Of these, QEMU is intended to help prepare OSs like OpenBSD
-that require VirtIO and console adjustments prior to booting under bhyve.
+rc script includes basic jail and QEMU support and could include VirtualBox,
+chroot, simh and GXemul support. Of these, QEMU is intended to help prepare
+OSs that require VirtIO and console adjustments prior to booting under bhyve.
+
+
+### REQUIREMENTS ###
+
+The Intel "POPCNT" (EPT) processor feature is required for bhyve operation.
+
+vmrc requires the bhyve hypervisor, available in FreeBSD 10.0, 10.1 and 11.0
 
 
 ### CHEAT SHEET ###
 
-Unpack vmrc.tar or retrieve the latest version from GitHub:
-
-https://github.com/michaeldexter/vmrc
-
-
-## FreeBSD VMs ##
-
-Run 'sh install-vmrc.sh' or read it and perform the steps manually.
-
-Run templates/install-templates.sh to install all templates into:
-
-/usr/local/vmrc/templates
+Run "sh install-vmrc.sh" or read it and perform the steps manually, adjusting
+the paths to suit your system.
 
 Verify your host_nic and optional host_zpool in /usr/local/etc/vm.conf
 
-The mkvm.sh script can provision a Virtual Machine based on one of the
-included templates in /usr/local/vmrc/templates
+The mkvm.sh script provisions Virtual Machines based on the templates in
+/usr/local/vmrc/templates
 
-mkvm.sh can be used in a captive manner or by passing in a template name and a
-VM name. i.e.: sh mkvm.sh t_freebsd10 freebsd which will create a VM named
-freebsd followed by an auto-generated number such as 3: freebsd3
+mkvm.sh can be used in a captive manner with:
 
-Note that all VMs are distinguished by unique trailing ID numbers:
+sh mkvm.sh
+
+or by passing in a template name and a VM name. i.e.:
+
+sh mkvm.sh fbsd10amd64_img_gpt_ufs_dist freebsd
+
+which will create a VM named "freebsd#" where "#" is a unique, auto-generated
+VM ID number such as "0", resulting in a VM named "freebsd0" in:
+
+/usr/local/vmrc/vm/freebsd0
+
+The template naming is based on its configuration variables. In this example:
+
+fbsd10: FreeBSD 10 Operating System
+amd64:  AMD64 Architecture
+img:    Disk Image-based Storage
+gpt:    GPT Partitioned Filesystem
+ufs:    UFS Formatted Filesystem
+dist:   Binary Distribution Set Installation Method
+
+All vmrc VMs are distinguished by unique trailing ID numbers:
 
 OK: vm0, freebsd1, openbsd2
 
-NOT OK: vm0, freebsd0 and openbsd0
-
-Consider using a numeric word to describe an OS version such as "freebsd-ten3"
-
-Once a VM is provisioned, run:
-
-/usr/local/etc/rc.d/vm                (Show usage)
-/usr/local/etc/rc.d/vm start          (Loads and boots all VMs)
-/usr/local/etc/rc.d/vm start vm0      (Start a specific VM)
-
-The vm rc script can also be called with the service(8) command:
-
-service vm start vm0
-
-Alternatively there is "ISO" mode:
-/usr/local/etc/rc.d/vm iso vm0        (Fetches and boots and ISO image w/ grub)
-
-"ISO" mode will prepare a disk image to install the OS to and includes fetch
-support for FreeBSD, Ubuntu and CentOS.
+CONFLICTING: vm0, freebsd0 and openbsd0 (trailing ID number must be unique)
 
 
-## Linux VMs ##
+Once a VM is provisioned, it is managed with the "vm" rc script which can be
+enabled in the host's /usr/local/etc/rc.conf, i.e.:
 
-Copy a template to a VM directory such as /usr/local/vmrc/vm/linux0/linux0.cfg
-and use "ISO" mode:
+/usr/local/etc/rc.d/vm onestart freebsd0
 
-/usr/local/etc/rc.d/vm iso linux0
+if enabled in /usr/local/etc/rc.conf :
+
+/usr/local/etc/rc.d/vm start freebsd0
+
+Templates with "iso" in their names are installed by booting to ISO images
+and formatting their storage devices with the OS's native installer. These are  
+provisioned by booting in "ISO" mode:
+
+service vm iso openbsd4
+
+Once the OS is installed from ISO, these can be booted with the standard
+'start' directive:
+
+service vm start openbsd4
+
+The 'grub' directive exists to launch the VM in the GRUB boot loader. This is
+particularly useful for determining the on-disk layout of the operating system.
+
+Useful GRUB prompt commands are:
+
+grub> ls		# List devices
+grub> ls (cd0)		# Get information for cd0
+grub> ls (cd0)/		# List contents of cd0
+grub> ls (hd0)		# Get information for hd0
+grub> ls (hd0)/		# List contents of hd0
+grub> set		# Show set arguments
+
+linux (cd0)/vmlinuz
+initrc (cd0)/initrd.gz
+boot
+
+kopenbsd -h com0 (cd0)/5.6/amd64/bsd.rd
+boot
+
+knetbsd -h -r cd0a (cd0)/netbsd
+boot
+
+In a perfect world, GNU/Linux distros would use a standard location for
+vmlinuz and initrd.gz, but this is not that world. BSD gets this right.
+
+Debian/Ubuntu GNU/Linux are some of the simplest distributions to configure:
+
+iso_grub_r="-r cd0"		# Default to cd0 for ISO boot
+img_grub_r="-r hd0,msdos1"	# Default to hd0 for img boot
+
+grub-bhyve then correctly finds /boot/grub/grub.cfg on these devices as they
+are the default GRUB locations.
+
+If your VM OS (such as OpenBSD, NetBSD and many GNU/Linux distributions)
+requires an external grub.cfg, a \n separated one can be added to the template.
+For example:
+
+iso_grub_cfg="linux (cd0)/vmlinuz\ninitrc (cd0)/initrd.gz\nboot" 
+
+This will auto-generate a ~/grub.cfg file with:
+
+linux (cd0)/vmlinuz
+initrc (cd0)/initrd.gz
+boot
+
+vmrc will also auto-generate a device.map file:
+
+/usr/local/vmrc/vm/centos7amd64iso0/device.map
+
+Reads:
+
+(hd0) /usr/local/vmrc/vm//centos7amd64iso0/centos7amd64iso0.img
+(cd0) /usr/local/vmrc/vm//centos7amd64iso0/centos7amd64iso0.iso
+
+Centos7 GRUB with the defice.map file:
+
+grub> ls
+(hd0) (hd0,msdos2) (hd0,msdos1) (cd0) (cd0,msdos2) (host) (lvm/centos-root) (lv
+m/centos-swap)
+
+Without the device.map:
+
+grub> ls
+(host)
+
+If a grub.cfg is not supported by a given GNU/Linux distribution for ISO boot,
+the arguments can be entered in at the grub prompt or be read from grub.cfg
+on the host filesystem.
+
+For example:
+
+/usr/local/vmrc/vm/centos7amd64iso0/grub.cfg
+
+linux (cd0)/vmlinuz
+initrc (cd0)/initrd.gz
+boot
+
+Once installed, the CentOS 7 grub.cfg exists in:
+
+(hd0,msdos1)/grub2/grub.cfg
+
+The grub.cfg garguments to use this would be:
+
+/usr/local/sbin/grub-bhyve -r hd0,msdos1 -d /grub2/ \
+-m /usr/local/vmrc/vm/centos7amd64iso0/device.map -M 1024 centos7amd64iso0
+
+Other examples:
+
+(cd0)/isolinux/grub.conf
+
+(cd0)/EFI/BOOT/grub.cfg
+
+If an external grub.cfg is used, the -r command can be used to specify the
+boot drive, i.e. -r hd0,msdos1 and the commands can be issued without the
+(hd0,msdos1) prefix.
+
+Note that GNU/Linux paths may vary depending of the type of filesystem you use.
+
+grub-bhyve kfreebsd support is experimental.
 
 
-### COMMAND USAGE ###
+### DIRECTIVE USAGE ###
 
-/usr/local/etc/rc.d/vm commands can take in zero or more VM arguments.
+The 'start', 'stop' and 'status' will act on all VMs in /usr/local/vm/ or
+multiple specified VMs i.e.:
 
-'start', 'stop' and 'status' will act on all VMs in /usr/local/vm/ or
-multiple VMs i.e.:
-
-/usr/local/etc/rc.d/vm start vm0 vm2 vm3
-/usr/local/etc/rc.d/vm status
-/usr/local/etc/rc.d/vm status vm3
+service vm onestart vm0 vm2 vm3   (start three spcific VMs)
+service vm onestop                (stop all VMs)
+service vm onestatus freebsd0     (status for one VM)
 
 
-### COMMANDS ###
+### DIRECTIVES ###
 
 Top level commands without a VM name (i.e. /usr/local/etc/rc.d/vm start)
 
 start		Load and boot all VMs in /usr/local/vm/
 stop		Ungracefully terminate all VMs in /usr/local/vm/
 status		List running VMs
-
-All VMs in /usr/local/vm/ will be launched on boot! (see "CONSOLES" below)
 
 Issue a "reboot" within the VM to shut it down. Cleaner ACPI shutdown is
 available after the 10.0-RELEASE and is included in vmrc.
@@ -125,58 +271,120 @@ load		Load a VM with bhyveload(8) or grub-bhyve()
 boot		Boot a VM with bhyve(8)
 destroy		'destroy' a VM
 restart		Run the stop and start functions on a VM
-attach		Attach to a VM's nmdm serial port or tmux session
+attach		Attach to a VM's nmdm serial port, tmux or screen session
 debug		List bhyvectl(8) --get-all output
 iso		Format storage device, fetch an ISO image, boot to it
 grub		Launch grub with the VM's disk and ISO images
 mount		fsck(8) and mount(8) a FreeBSD VM disk image (UFS only)
 umount		umount(8) a FreeBSD VM disk image
 jail		Launch a FreeBSD VM's disk image with jail(8)
-format		Create and format a FreeBSD VM disk image
 delete		Delete a VM and its images and directory tree
 
 
 ### VM LAYOUT ###
 
-/usr/local/vmrc/vm/distributions/ OS distribution sets and ISOs
-/usr/local/vmrc/vm/templates/     VM templates
-/usr/local/vmrc/vm/vm#/vm#.conf   VM config file
-/usr/local/vmrc/vm/vm#/vm#.img    VM raw disk image (format or copy in)
-/usr/local/vmrc/vm/vm#/vm#.iso    Link to bootable ISO image (fetch or copy in)
-/usr/local/vmrc/vm/vm#/mnt/       VM mount point for raw disk image
+/usr/local/vmrc/vm/distributions/  OS distribution sets and ISOs
+/usr/local/vmrc/vm/templates/      VM templates
+/usr/local/vmrc/vm/vm#/vm#.conf    VM config file
+/usr/local/vmrc/vm/vm#/vm#.img     VM raw disk image (format or copy in)
+/usr/local/vmrc/vm/vm#/vm#.iso     Link to bootable ISO image (fetch or copy in)
+/usr/local/vmrc/vm/vm#/mnt/        VM mount point for raw disk image
+/usr/local/vmrc/vm/vm#/vm#.log     VM command log
+
+The ifconfig_cmd.sh, bhyveload_cmd.sh and bhyve_cmd.sh shell scripts will also
+be created in /usr/local/vmrc/vm/vm#/ at boot time and can be run independently
+of vmrc for testing purposes. Note that these will not create the network
+bridge or perform any VM cleanup.
 
 
 ### CONSOLES ###
 
-The included templates direct each VM's output to an "nmdm" serial device.
+The included templates direct each VM's console output to the host terminal or
+console from which they are booted. This is not ideal if starting VMs during
+host startup.
 
-Alternatively it can be directed to "stdio" or a tmux session,
+Alternatively, VM console output can be directed to nmdm, tmux or screen
+sessions rather than standard I/O. nndm consoles are supported by FreeBSD's
+included cu(1) command while tmux and screen require the respective ports or
+packages to be installed.
 
-"Detached" nmdm and tmux-detached "vm_console" types are available.
-All other examples are set to "nmdm" and a bonmdm and tmux-detached consoles
-can be attached to with using the "attach" command, i.e.:
+To change to a detachable console, change the "vm_console" variable in the VM
+configuration file from "stdio" to "nmdm", "tmux", "tmux-detached", "screen"
+or "screen-detached" with "detached" indicating that it will be backgrounded/
+detached automatically upon boot which would be suitable for use during host
+startup. The "nmdm" console is detached by default.
 
-/usr/local/etc/rc.d/vm attach vm0
+To attach to a detached console, use the "attach" directive:
 
-You can detach from nmdm consoles with "~ CTRL-d" and from tmux sessions with
-"CTRL-b d".
+/usr/local/etc/rc.d/vm oneattach freebsd3
 
-NOTE: nmdm consoles have the advantage of using the in-base cu(1) command but
-had a bug in 10.0R that would cause the VM to boot only upon first attachment.
-tmux may be a wiser choice in production environments.
+To detach from each console, type:
+
+nmdm: "~ CTRL-d"
+tmux: "CTRL-b d"
+screen: "C-a DD"
+
+Note: There is a bug in FreeBSD 10.0R that would cause the VM to boot only
+upon first attachment.
+
+
+### NETWORKING ###
+
+By default, vmrc uses on network bridge on one interface on the host as defined
+in /usr/local/etc/vm.conf :
+
+host_nic="em0"	                 # Host's active NIC for bridged networking
+host_bridge="0"	                 # bridge0 (Fine for most configurations)
+
+Should you want to use multiple bridges that are associated with multiple host
+interfaces, you should be able to simply add these arguments to the VM template
+as they are sourced sequentially. PLEASE TEST THIS.
 
 
 ### DEPENDENCIES ###
+
+vmrc has been tested on PC-BSD 10-STABLE and FreeBSD 11-CURRENT from
+July 1st, 2014 onward.
 
 tmux functionality requires ports/sysutils/tmux
 ISO and non-FreeBSD VM support requires ports/sysutils/grub2-bhyve 
 QEMU functionality requires ports/emulators/qemu(-devel)
 
-Note: Early versions of the grub2-bhyve port include a gcc runtime requirement
-which is in fact only a build requirement. This has been fixed.
 
-grub2-bhyve version .22 and later support OpenBSD bsd and bsd.mp kernels but
-not the bsd.rd install kernel. Consider flashrd (documentation to come)
+### TEMPLATES ###
+
+The template naming attemps to convey as much information about a VM in as
+little space possible. VM names over 31 characters will cause bhyve load to
+give the error:
+
+vm_create: Invalid argument
+
+The simple solution is to not use the full template name as a VM name and note
+that the automatic numbering done by mkvm.sh will add characters to the end of
+a given VM name.
+
+The master_template includes all VM arguments but the examples
+will make more sense. 'diff' similar FreeBSD ones to see how they differ.
+
+Many templates have OS-specific notes at the bottom in the Comments section.
+
+Some templates have prefixes: dyn_ err_ reqtty_ and reqvt_:
+
+dyn_     These templates reference frequently-changing download links. These
+         should be updated manually before use. Few OSs include /latest.iso etc.
+         and the included payloads may be invalid by the time you read this.
+
+err_     These templates are largely complete but have known errors of one form
+         or another. Your help debugging these is appreciated.
+
+reqtty_  These FreeBSD-based OSs boot but require the tty fix
+
+reqvt_   These FreeBSD-based OSs boot but require VirtIO drivers.  
+
+The tty console fix and VirtIO drivers are easily added but ideally they will
+be included with the upstream OSs.
+
+Note the "required" fields in the templates. They are required.
 
 
 ### MISC ###
@@ -186,15 +394,14 @@ Michael Dexter <editor@callfortesting.org>
 
 FreeBSD VMs have their disk images fsck'd before boot given that fsck at boot
 time is not always comprehensive and may result in VM boot failure. Jailed VMs
-with dirty file systems may cause kernel panics. (bug?)
+with dirty file systems may cause kernel panics.
 
 FreeBSD guests can be provisioned with "iso" mode but it will not set the needed
-console. (A "smart" console is undergoing testing that would eliminate the need
-for any console changes). For now, just as with vmrun.sh, start a "manual
-configuration" console and run:
+console. (A "smart" console arrived mid-June 2014 and is available in FreeBSD
+CURRENT and some STABLE branches.
 
 cat >> /etc/ttys << EOF
-console "/usr/libexec/getty std.9600"   vt100   on secure
+ttyu0 "/usr/libexec/getty 3wire.9600" vt100 on secure
 EOF
 
 GNU/Linux users will find the "grub" command very useful for locating disks and
@@ -206,17 +413,70 @@ A few GNU/Linux-related features did not make it into the FreeBSD 10.0 release:
 The -w flag for better CentOS and RHEL performance
 
 
+### bhyve OVERVIEW ###
+
+The bhyve hypervisor consists of the following components:
+
+/boot/kernel/vmm.ko  Kernel module
+/dev/vmm/*           Index of loaded virtual machines
+/usr/sbin/bhyveload  Userspace FreeBSD loader
+/usr/sbin/bhyve      Virtual Machine boot utility
+/usr/sbin/bhyvectl   Virtual Machine shutdown and diagnostics utility
+/usr/local/sbin/grub-bhyve  Optional userspace GRUB bootloader
+
+Both bhyveload(8) and bhyve(8) are provided the VM memory allocation and a
+bootable block device in the form of a /dev/ device or a disk image plus a
+virtual machine name. These must be consistent between both utilities.
+
+bhyve(8) is provided additional arguments describing PCI devices (notably for
+VirtIO storage and network) plus miscelanous operational parameters. 
+
+A bhyve(8) virtual machine is shutdown with a reboot(8) command and the
+/dev/vmm/<vmname> entry is cleaned up with the bhyvect(8) command.
+
+VM network is primarily achived by providing an if_tap(4) network device that is
+associated with an if_bridge(4) bridge. Alternatively a hardware network device
+could be passed to the virtual machine but this is not supported by vmrc.
+
+The first bhyve-ready FreeBSD snapshot "raw" VM-IMAGEs arrived on June 15th,
+2014 and do not require any modification for use with bhyve. vmrc has templates
+for these raw images and they can also be used with the
+/usr/share/examples/bhyve/vmrun.sh script that is included with FreeBSD. These
+images can be found at ftp://ftp.freebsd.org/snapshots/
+
+Alternatively, virtual machines can be built in a manner similar to jail(8)
+systems or hardware-based systems. The FreeBSD ISO install images can be used
+for this purpose and this the approach taken by vmrun.sh. Note that all but the
+most recent FreeBSD 11.0-CURRENT and 10.0-STABLE releases require a /etc/ttys
+modification to work properly. vmrc will peform this modification as needed for
+most FreeBSD versions and FreeBSD-derived operating systems.
+
+The vmrc template syntax should be self-explanatory and attempts to accomodate
+most desired system configuration options short of complex partitioning and the
+creation of users or installation of ports and packages. Once built and booted,
+a bhyve virtual machine behaves like a normal system and can be operated with
+your tools of choice.
+
+
 ### DEVELOPER NOTES ###
 
-GitHub: https://github.com/michaeldexter/vmrc
+Latest releases are available at: https://github.com/michaeldexter/vmrc
 
-While patches are welcome, please take the time to understand how this script
-works before proposing solutions to problems that might be more complex than
-they appear. Ask questions!
+vmrc Design Goals
+
+* "Unix" design philosophy, simple architecture and transparent operation
+* Rapid, flexible development using in-base tools
+* Zero dependencies for basic operation with significant-value add-ons
+* Fundamentally-portable design
+* Open architecture to accept additional multiplicity strategies
+
+While patches are welcome but please take the time to understand how this script
+works before proposing solutions to problems that might be more simple or
+complex than they appear. Ask questions!
 
 vmrc aims to have zero dependencies to operate. It optionally uses external
-utilities like grub2-bhyve, tmux, qemu and the like to add functionality but
-will hopefully never depend on them.
+utilities like grub2-bhyve, tmux, qemu, screen and the like to add
+functionality but will hopefully never depend on them.
 
 The vm rc script and mkvm.sh perform two key functions:
 
@@ -229,9 +489,9 @@ attachment and mounting of the disk image (FreeBSD only) and an optional
 preflight script.
 
 mkvm.sh is largely a simplified FreeBSD installer that is comprised of
-functions.
+preflight, primary and debug functions.
 
-The vm rc script largely creates bhyveload(8) and bhyve(8) command syntax for
+The vm rc script primarily creates bhyveload(8) and bhyve(8) command syntax for
 loading and booting virtual machines based on the criteria in the configuration
 files such as the VM RAM allocation, block device to boot, network interfaces
 etc. The vm rc script will output the bhyveload and bhyve command strings that
@@ -256,118 +516,22 @@ association with a given VM. The solution is to add a suffix to the tap device,
 indicating the NIC ID (vm0's tap0 -> tap01 or vm3's tap3 ->tap31).
 
 This revealed a problem: ifconfig will now allow for tap ID's to be
-prefixed with "0" and thus vm0's tap03 would be invalid. To solve this, we use
-a double digit VMID that is prefixed with the arbitrary "8", resulting in vm0's
-fourth network interface being tap8033 (8 | VM ID | Network Device ID).
+prefixed with "0" and thus vm0's tap03 would be invalid. To solve this, vmrc 
+emplys a double digit VMID that is prefixed with the arbitrary "8", resulting
+in vm0's fourth network interface being:
+
+tap8033 [ 8 | VM ID of 3 | Network Device ID of 4 (counting from 0) ]
+
 Network device "3" is the fourth device because the first one is "0".
+
+Additional network devices could be creatd on additional PCI virtual interfaces
+but this functionality is not supported by vmrc.
 
 
 ### SPECIAL THANKS ###
 
-Thank you Neel, Peter, John and Tycho for your hard work on bhyve.
+Thank you Neel, Peter, John B. and Tycho for your hard work on bhyve.
 
 Thank you Devin for greatly improving this script and Allan at ScaleEngine for
 testing it and providing resources for it and bhyve's improvement.
 
-
-### mkvm.sh TO DO ###
-
-fix: Homogenize templates to master
-fix: Make sure devices and zvols are not left attached after installation
-fix: ${var_name:=variable} syntax if not set...
-fix: Correct rc behavior... vm_enable="YES"
-fix: Shorten FreeBSD boot timeout: autoboot_delay="3"
-test: Check extraction destinations. zvols will not mount to directories
-	with .snap in them etc.
-ext bug: The PC-BSD automounter will delete a mount point you use. Fix coming.
-	f_mount does create a directory but may not help all cases.
-feature: Implement zfs "mount" and "umount"
-feature: Implement make installworld installation
-note: Expanding .tar is faster than .txz. Maybe institutionalize.
-feature: Bring back 8.* dist set support. Maybe repackage to new .txz layout.
-feature: ZFS clone-based storage.
-feature: ZFS dataset for each /dev/vm/* for versioning.
-feature: getopts? Use bsdconfig-style environment variables?
-feature: Have an IP prefix/subnet in vm.conf? Override in mkvm.sh?
-feature: Better preparation of VMs for jail use
-        sendmail_enable="NO"
-        inetd_flags="-wW -a 192.0.2.23"
-        rpcbind_enable="NO
-feature: beadm?
-feature: panicmail, firstboot?
-
-
-### vm TO DO ###
-
-*NOT* PACKAGE THIS YET - IT IS NOT READY AND IS CHANGING RAPIDLY
-note: Tested on 10.0-RELEASE, PC-BSD 10.0 and FreeBSD 11 snapshots
-fix: QEMU support - not seeing disk images even if present
-fix: vm_destroy after tmux session
-news: bhyve automatic console detection is being tested, eliminating tty issues
-feature: a "disable" option for VMs to prevent boot upon host boot
-test: Try every incorrect sequence of commands and see if checks work
-See "# fix: " throughout the script
-concern: loaders can be captive and hang: detach loader steps, check flow
-feature: disable vm option - move to ~/disabled
-missing: mount zpool to ~/vm#/mnt
-test: Why are ubuntu VMs read-only upon (first) boot?
-test: TrueOS, Does android have VirtIO?
-fix: Test: acpi kill in FreeBSD 11-current
-linux needs acpi-utils, openbsd doesn't support power button?
-	hw.allowpowerdown=1 ?
-fix: Ubuntu often has a captive loader, halting host system boot
-fix: Test: host_vmroot without trailing / (make idiot-proof)
-fix: any way to avoid //'s in paths but safely not add trailing one in conf?
-fix: CHECK FOR CONFLICTING VM ID NUMBERS BEFORE BOOT
-	(Consider a PID or otherwise style of keeping VMs unique)
-fix: Cosmetic: stalled return after cu session clean up (cleared with ENTER)
-fix: Line wrapping!
-fix: Formatting: Remaining spaces in place of tabs, for multiline info()?
-fix: Formatting: Any way to elegantly wrap long URL's?
-fix: Merge f_iso and vm_load/vm_boot
-fix: Concern: could a VM booted at startup precede full networking?
-fix: Homogenize info/error/debug messages, lose some
-fix: Check for a valid tmux session before attempting to attach?
-fix: Add zvol and raw device support to grub and load
-fix: Destroy VM zvols in delete function
-fix: Add root-on-ZFS configuration for when the zfs_boot change is made
-fix: Add pty console attachment option (/dev/pts/<n>), try a physical port
-fix: Why does second run of 'bhvye' on a loaded vm simply give a new line?
-fix: Does grub boot need the CD ISO?
-fix: Can grub NOT wipe out all preceding on screen (debug) text?
-fix: f_vmmcheck: Is vmm going to be built in by default? (not yet!)
-fix: f_vmmcheck: Note left-justified reverse indenting
-fix: Remove info's and DEBUG's when satisfied?
-fix: NEVER too many checks
-fix: Push more checks to separate f_functions?
-fyi: bhyve: not loaded first: vm_open: Invalid argument or error 33
-fix: Elegant way to use official VM images? (qemu-img conversion works)
-	qemu-img convert -O raw freebsd.qcow2 freebsd.raw (needs console!)
-fix: idea: Dump the load and boot commands plus diagnostic info to a log file.
-fix: idea: Add a 'top' command function 'top -uaP' ? How to show only bhyve?
-fix: idea: Consider what other commands may want to act on multiple VMs
-fix: idea: Cloud! (What was the question?) (ssh is your friend)
-fix: idea: Popular jail functionality
-fix: idea: Have a separate jail shell-only (no rc) command for maintenance?
-fix: idea: Config file hooks for commands at various steps?
-fix: idea: "Master" VM zvol cloning?
-fix: idea: Add chroot, simh and GXemul support if they have serial output
-fix: idea: freebsd-update on boot? (external problem?)
-fix: idea: Probe disk layout and fs types? (vmrun.sh probe fails on zvols)
-fix: idea: Maybe check for /mnt/.snap on new fs's as a test
-fix: idea: Consider an "installworld" method as per the jail man page?
-fix: idea: config file-> flags like vm_flags="em0 root ..."
-fix: idea: Some flag to indicate "don't boot this VM" (move from dir)?
-fix: idea: Add full ext2/3/4 support to the "mount" option (fuse ext4)
-Note e2fsprogs and e2fsck /dev/md0s1 and mount -t ext2fs /dev/md0s1 /mnt
-Linux ZFS may be very helpful as a LCD FS
-
-fix: Note Neel's vmrun.sh loop:
-while [ 1 ]; do
-<destroy>
-<load>
-<boot>
-	if [ $? -ne 0 ]; then
-		break
-	fi # exit if you get a non 0 return
-done
