@@ -1,17 +1,21 @@
+Known vmrc Issues
 
-Welcome brave soul,
-
-This has a few know issues and concerns but I am attending to them ASAP:
-
-1. The Centos65*, Debian and Ubuntu templates appear to work. The others 
-   require configuration.
-2. Templates prefixed with dyn_ need frequent updating i.e. snapshots.
+1. Not all GNU/Linux templates are updated to the new syntax. Not all work. 
+2. Templates prefixed with dyn_ need frequent updating. (i.e. snapshots)
 3. There may be a limit to the number of arguments (VMs) that can be fed into an
    rc script: TEST
-4. bhyveload has a 31 character vm name limit
-5. Whatever else you find.
+4. bhyveload has a 31 character VM name limit
+5. "detached" VM's do not auto-cleanup
+6. /etc/rc: WARNING: $vm_enable is not set properly - see rc.conf(5).
 
 Thanks!
+
+
+Known Feature Requests
+
+Multiple Bridge Support (bridge/tap pairs?)
+VM MAC Address Support (Easy with one NIC, not for multiple)
+
 
 Michael Dexter <editor@callfortesting.org>
 

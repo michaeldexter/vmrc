@@ -24,7 +24,7 @@ virtio_type="ahci-hd"    # "ahci-hd" or "virtio-blk" (required)
 
 # OS-specific VM runtime boot variables
 vm_hostbridge=""         # "amd_" for the AMD hostbridge (required for OpenBSD)
-bhyve_flags="-W"         # Additional bhyve(8) flags (-w is common on Linux)
+bhyve_flags="-w"         # Additional bhyve(8) flags (-w is common on Linux)
 iso_grub_cfg="linux (cd0)/isolinux/vmlinuz text\ninitrd (cd0)/isolinux/initrd.img\nboot" 
                          # \n separated grub.cfg (required for GRUB ISO boot)
 iso_grub_d="-d $host_vmdir/$1"

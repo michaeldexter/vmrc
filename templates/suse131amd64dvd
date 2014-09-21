@@ -5,7 +5,7 @@
 vm_os_type="other"       # "freebsd" or "other" (required)
 vm_dev_type="img"        # (disk) "img", (RAM) "malloc", "zvol" or "device"
 vm_dev_root=""           # p2, p3, s1a etc. (required for FreeBSD fsck & mount)
-vm_dev_fs="ufs"          # "ufs" or "zfs" (for FreeBSD UFS fsck or provisioning)
+vm_dev_fs=""             # "ufs" or "zfs" (for FreeBSD UFS fsck or provisioning)
 vm_dev_flags=""          # ZFS features "-d -o feature@async_destroy=enabled"
 
 # Existing boot device in /dev/ if "device" was set for vm_dev_type. i.e. "ada2"
@@ -17,7 +17,7 @@ vm_addtl_nics=""         # "1" through "7" (tap8<2 digit vm_id>[PCI unit 1-7]
 
 # VM runtime boot variables
 vm_cpus="1"              # Number of VM virtual CPUs (max 16) (required)
-vm_ram="1024"            # VM RAM Allocation in MB (required)
+vm_ram="2048"            # VM RAM Allocation in MB (required)
 vm_console="stdio"       # "stdio", "nmdm", "tmux", "tmux-detached",
                          # "screen", or "screen-detached" (required)
 virtio_type="ahci-hd"    # "ahci-hd" or "virtio-blk" (required)
@@ -25,27 +25,31 @@ virtio_type="ahci-hd"    # "ahci-hd" or "virtio-blk" (required)
 # OS-specific VM runtime boot variables
 vm_hostbridge=""         # "amd_" for the AMD hostbridge (required for OpenBSD)
 bhyve_flags="-w"         # Additional bhyve(8) flags (-w is common on Linux)
-iso_grub_cfg=""          # \n separated grub.cfg (required for GRUB ISO boot)
-iso_grub_d=""            # ISO mode grub-bhyve -d directive
+iso_grub_cfg="linux (cd0)/boot/x86_64/loader/linux\ninitrd (cd0)/boot/x86_64/loader/initrd\nboot"
+                         # \n separated grub.cfg (required for GRUB ISO boot)
+iso_grub_d="-d $host_vmdir/$1"
+                         # ISO mode grub-bhyve -d directive
                          # -d $host_vmdir/$1 for local or -d /grub/ for VM
 iso_grub_r=""            # VM device where to find grub.cfg i.e. -r cd0,msdos1
 img_grub_cfg=""          # \n separated grub.cfg (required for GRUB img boot)
-img_grub_d=""            # IMG mode grub-bhyve -d directive 
+img_grub_d="-d /boot/grub2/"
+                         # IMG mode grub-bhyve -d directive 
                          # -d $host_vmdir/$1 for local or -d /grub/ for VM
-img_grub_r=""            # VM device where to find grub.cfg i.e. -r hd0,msdos1
+img_grub_r="-r hd0,msdos2"
+                         # VM device where to find grub.cfg i.e. -r hd0,msdos1
 
 # Provisioning Variables
-vm_dev_size="2G"         # Disk image size in M or G for non-disk image install
+vm_dev_size="5G"         # Disk image size in M or G for non-disk image install
 install_method="isoimg"  # "rawimg", "isoimg", "distset" or "obj"
-install_site="http://download.fedoraproject.org"
-		         # Distribution payload site i.e. ftp://ftp.freebsd.org
+install_site="http://suse.mobile-central.org/"
+                         # Distribution payload site i.e. ftp://ftp.freebsd.org
 #install_site="file://"  # Local payload option once downloaded (choose one)
-site_path="/pub/fedora/linux/releases/20/Live/x86_64/"
+site_path="/distribution/13.1/iso/"
                          # Distribution payload directory path
-site_payload="Fedora-Live-Desktop-x86_64-20-1.iso"
+site_payload="openSUSE-13.1-DVD-x86_64.iso"
                          # Distribution payload file(s) (space separated)
-payload_compressed=""    # "yes" if compressed ISO or rawimg payload
-requires_tty="no"        # "yes" if a serial tty is required (FreeBSD only)
+payload_compressed=""    # "yes" if compressed ISO or rawimg payload  
+requires_tty=""          # "yes" if a serial tty is required (FreeBSD only)
 obj_srcdir=""            # Location of OS sources (uses /usr/obj) (FreeBSD only)
 
 # FreeBSD-specific VM provisioning variables
@@ -53,10 +57,11 @@ vm_dev_util=""           # Partitioning tool "fdisk" or "gpart" (MBR or GPT)
 vm_dev_layout=""         # "gpt" or "mbr" volume layout
 vm_timezone=""           # VM timezone
 vm_hostname=""           # VM hostname
+
 vm_ipv4=""               # VM IPv4 address (blank for DHCP)
 vm_gw=""                 # VM IPv4 gateway
 vm_searchdomain=""       # VM resolv.conf searchdomain
 vm_dns=""                # VM resolv.conf IPv4 DNS server
-vm_password="bsd"        # VM password (clear text for now)
+vm_password=""           # VM password (clear text for now)
 
 # Comments:
