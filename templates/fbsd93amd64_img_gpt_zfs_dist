@@ -2,7 +2,7 @@
 # mkvm.sh copies this to /usr/local/vmrc/vm/<vmname><vmid>.conf
 
 # VM global variables used by both provisioning and at runtime
-vm_os_type="freebsd"     # "freebsd" or "other" (required)
+vm_os_type="freebsd"     # "freebsd" or "grub" (required)
 vm_dev_type="img"        # (disk) "img", (RAM) "malloc", "zvol" or "device"
 vm_dev_root="p2"         # p2, p3, s1a etc. (required for FreeBSD fsck & mount)
 vm_dev_fs="zfs"          # "ufs" or "zfs" (for FreeBSD UFS fsck or provisioning)
