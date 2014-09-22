@@ -26,7 +26,7 @@ virtio_type="ahci-hd"    # "ahci-hd" or "virtio-blk" (required)
 vm_hostbridge="amd_"     # "amd_" for the AMD hostbridge (required for OpenBSD)
 bhyve_flags="-W"         # Additional bhyve(8) flags (-w is common on Linux)
 iso_grub_cfg="kopenbsd -h com0 (cd0)/5.6/amd64/bsd.rd\nboot" 
-                          \n separated grub.cfg (required for GRUB ISO boot)
+                         # \n separated grub.cfg (required for GRUB ISO boot)
 iso_grub_d="-d $host_vmdir/$1"
                          # ISO mode grub-bhyve -d directive
                          # -d $host_vmdir/$1 for local or -d /grub/ for VM
