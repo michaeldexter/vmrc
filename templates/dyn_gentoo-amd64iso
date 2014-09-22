@@ -17,18 +17,16 @@ vm_addtl_nics=""         # "1" through "7" (tap8<2 digit vm_id>[PCI unit 1-7]
 
 # VM runtime boot variables
 vm_cpus="1"              # Number of VM virtual CPUs (max 16) (required)
-vm_ram="2048"            # VM RAM Allocation in MB (required)
+vm_ram="1024"            # VM RAM Allocation in MB (required)
 vm_console="stdio"       # "stdio", "nmdm", "tmux", "tmux-detached",
                          # "screen", or "screen-detached" (required)
 virtio_type="ahci-hd"    # "ahci-hd" or "virtio-blk" (required)
 
 # OS-specific VM runtime boot variables
 vm_hostbridge=""         # "amd_" for the AMD hostbridge (required for OpenBSD)
-bhyve_flags=""         # Additional bhyve(8) flags (-w is common on Linux)
+bhyve_flags=""           # Additional bhyve(8) flags (-w is common on Linux)
+iso_grub_cfg="linux (cd0)/isolinux/gentoo root=/dev/ram0 init=/linuxrc dokeymap looptype=squashfs loop=/image.squashfs cdroot\ninitrd (cd0)/isolinux/gentoo.igz\nboot"
                          # \n separated grub.cfg (required for GRUB ISO boot)
-iso_grub_cfg="linux (cd0)/isolinux/vmlinuz0 root=live:CDLABEL=Fedora-Live-Desktop-x86_64-20-1 ro console=ttyS0 text\ninitrd (cd0)/isolinux/initrd0.img\nboot"
-#iso_grub_cfg="linux (cd0)/isolinux/vmlinuz0 root=live:CDLABEL=Fedora-Live-Desktop-x86_64-20-1 rootfstype=auto ro rd.live.image quiet rhgb rd.luks=0 rd.md=0 rd.dm=0 iso-scan/filename=Fedora-Live-Desktop-x86_64-20-1.iso\ninitrd (cd0)/isolinux/initrd0.img\nboot" # root=/dev/cdrom/\nboot" set root=(cd0)
-#iso_grub_cfg="configfile (cd0)/isolinux/isolinux.cfg"
 iso_grub_d="-d $host_vmdir/$1"
                          # ISO mode grub-bhyve -d directive
                          # -d $host_vmdir/$1 for local or -d /grub/ for VM
@@ -41,12 +39,12 @@ img_grub_r=""            # VM device where to find grub.cfg i.e. -r hd0,msdos1
 # Provisioning Variables
 vm_dev_size="2G"         # Disk image size in M or G for non-disk image install
 install_method="isoimg"  # "rawimg", "isoimg", "distset" or "obj"
-install_site="http://download.fedoraproject.org"
-		         # Distribution payload site i.e. ftp://ftp.freebsd.org
+install_site="http://distfiles.gentoo.org"
+		          # Distribution payload site i.e. ftp://ftp.freebsd.org
 #install_site="file://"  # Local payload option once downloaded (choose one)
-site_path="/pub/fedora/linux/releases/20/Live/x86_64/"
+site_path="/releases/amd64/current-iso/"
                          # Distribution payload directory path
-site_payload="Fedora-Live-Desktop-x86_64-20-1.iso"
+site_payload="install-amd64-minimal-20140904.iso"
                          # Distribution payload file(s) (space separated)
 payload_compressed=""    # "yes" if compressed ISO or rawimg payload
 requires_tty="no"        # "yes" if a serial tty is required (FreeBSD only)
@@ -65,6 +63,4 @@ vm_password="bsd"        # VM password (clear text for now)
 
 # Comments:
 
-# May delay at "Switched to clocksource tsc"
-# Eventually gives a login prompt (Neither root nor liveuser work)
-# HAS "TEXT" INSTALLATION BEEN REMOVED FROM FEDORA? (Some suggest it has)
+# This reaches the installer. How you install Gentoo?
