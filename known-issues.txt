@@ -6,7 +6,6 @@ Known vmrc Issues
    rc script: TEST
 4. bhyveload has a 31 character VM name limit
 5. "detached" VM's do not auto-cleanup
-6. /etc/rc: WARNING: $vm_enable is not set properly - see rc.conf(5).
 
 Thanks!
 
