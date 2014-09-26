@@ -1359,6 +1359,9 @@ echo Reading /usr/local/etc/vm.conf
 		{ echo /usr/local/etc/vm.conf failed to source. Exiting ; exit 1 ; }
 
 load_rc_config $name
+
+: ${vm_enable:="NO"}
+
 run_rc_command "$vm_cmd"
 
 ########################################################################
