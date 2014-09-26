@@ -31,7 +31,7 @@ iso_grub_d="-d $host_vmdir/$1"
                          # ISO mode grub-bhyve -d directive
                          # -d $host_vmdir/$1 for local or -d /grub/ for VM
 iso_grub_r=""            # VM device where to find grub.cfg i.e. -r cd0,msdos1
-img_grub_cfg="kopenbsd -h com0 -r sd0a (hd0,openbsd1)/bsd.mp\nboot"
+img_grub_cfg="kopenbsd -h com0 -r sd0a (hd0,openbsd1)/bsd\nboot"
                          # \n separated grub.cfg (required for GRUB img boot)
 img_grub_d="-d $host_vmdir/$1"
                          # IMG mode grub-bhyve -d directive 
