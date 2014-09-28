@@ -43,7 +43,7 @@ install_method="isoimg"  # "rawimg", "isoimg", "distset" or "obj"
 install_site="ftp://ftp.osuosl.org"
                          # Distribution payload site i.e. ftp://ftp.freebsd.org
 #install_site="file://"  # Local payload option once downloaded (choose one)
-site_path="/.1/centos/6.5/isos/x86_64/"
+site_path="/pub/centos/6.5/isos/x86_64/"
                          # Distribution payload directory path
 site_payload="CentOS-6.5-x86_64-minimal.iso"
                          # Distribution payload file(s) (space separated)
