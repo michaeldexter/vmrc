@@ -38,7 +38,7 @@ img_grub_r="-r hd0,msdos1"
 # Provisioning Variables
 vm_dev_size="2G"         # Disk image size in M or G for non-disk image install
 install_method="isoimg"  # "rawimg", "isoimg", "distset" or "obj"
-install_site="http://cdimage.debian.org/"
+install_site="http://cdimage.debian.org"
 		          # Distribution payload site i.e. ftp://ftp.freebsd.org
 #install_site="file://"  # Local payload option once downloaded (choose one)
 site_path="/debian-cd/7.6.0/amd64/iso-cd/"

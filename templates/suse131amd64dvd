@@ -41,7 +41,7 @@ img_grub_r="-r hd0,msdos2"
 # Provisioning Variables
 vm_dev_size="5G"         # Disk image size in M or G for non-disk image install
 install_method="isoimg"  # "rawimg", "isoimg", "distset" or "obj"
-install_site="http://suse.mobile-central.org/"
+install_site="http://suse.mobile-central.org"
                          # Distribution payload site i.e. ftp://ftp.freebsd.org
 #install_site="file://"  # Local payload option once downloaded (choose one)
 site_path="/distribution/13.1/iso/"

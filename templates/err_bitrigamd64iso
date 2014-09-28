@@ -41,7 +41,7 @@ img_grub_r=""            # VM device where to find grub.cfg i.e. -r hd0,msdos1
 # Provisioning Variables
 vm_dev_size="2G"         # Disk image size in M or G for non-disk image install
 install_method="isoimg"  # "rawimg", "isoimg", "distset" or "obj"
-install_site="http://mirror2.us.bitrig.org/"
+install_site="http://mirror2.us.bitrig.org"
                          # Distribution payload site i.e. ftp://ftp.freebsd.org
 #install_site="file://"  # Local payload option once downloaded (choose one)
 site_path="/pub/bitrig/snapshots/amd64/current/"
