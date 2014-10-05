@@ -44,7 +44,7 @@ install_site="http://distfiles.gentoo.org"
 #install_site="file://"  # Local payload option once downloaded (choose one)
 site_path="/releases/amd64/current-iso/"
                          # Distribution payload directory path
-site_payload="install-amd64-minimal-20140904.iso"
+site_payload="install-amd64-minimal-20141002.iso"
                          # Distribution payload file(s) (space separated)
 payload_compressed=""    # "yes" if compressed ISO or rawimg payload
 requires_tty="no"        # "yes" if a serial tty is required (FreeBSD only)

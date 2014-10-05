@@ -62,6 +62,9 @@ if [ $# -gt 0 ]; then # Non-interactive mode
 	echo -------------- Running in non-interactive mode --------------
 	echo -------------------------------------------------------------
 	echo The requested template is $1
+
+[ $2 = "" ] && echo No VM name specified. Exiting ; exit 1
+
 	template=$1
 	vm_name=$2$vm_id	
 else # Interactive mode

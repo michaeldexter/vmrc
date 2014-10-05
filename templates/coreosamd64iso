@@ -44,7 +44,7 @@ install_method="isoimg"  # "rawimg", "isoimg", "distset" or "obj"
 install_site="http://stable.release.core-os.net"
                          # Distribution payload site i.e. ftp://ftp.freebsd.org
 #install_site="file://"  # Local payload option once downloaded (choose one)
-site_path="/amd64-usr/current/"
+site_path="amd64-usr/current"
                          # Distribution payload directory path
 site_payload="coreos_production_iso_image.iso"
                          # Distribution payload file(s) (space separated)
@@ -64,3 +64,5 @@ vm_dns=""                # VM resolv.conf IPv4 DNS server
 vm_password=""           # VM password (clear text for now)
 
 # Comments:
+
+# site_path does not contain leading and trailing /'s to satisfy unique site.
