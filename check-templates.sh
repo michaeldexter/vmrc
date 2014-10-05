@@ -24,7 +24,7 @@
 # This is a simple script that use 'wget -q --spider' to verify that all of
 # the downloadable images in the templates are still accessible.
 
-# Requires wget
+# Requires wget - easily replaced with fetch -s, output supression and return check
 
 host_distdir="/usr/local/vmrc/templates/"
 
