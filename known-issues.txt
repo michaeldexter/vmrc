@@ -1,34 +1,19 @@
 Known vmrc Issues
 
-1. bhyveload has a 31 character VM name limit
-2. "detached" VMs do not auto-cleanup as they are independent of parent process
-3. Templates prefixed with dyn_ need frequent updating. (i.e. snapshots)
-4. Several GNU/Linux templates are incomplete, perhaps only including ISO boot
-   but not img boot. Please figure out the various installers and report back
-   with and installer crash course or the proper img boot arguments.
-5. There may be a limit to the number of arguments (VMs) that can be fed into an
-   rc script. Please test.
-6. Please test automatic VM load with multiple VMs.
-7. Copying the host_nic, host_bridge and host_zpool ariables in vm.conf to
-   individual templates should override the global variables. Please test.
-8. Will removing the ZFS feature flags enable all on "current" OSs? Please test.
-9. Must convince PC-BSD, TrueOS, NAS4Free, mfsbsd and BSDRP to update their ttys
-   files/getty entries to be serial-friendly.
+1. Many GNU/Linux are configured for ISO boot but not hd0 boot. Know GNU/Linux?
+2. Templates prefixed with dyn_ need frequent updating. (i.e. snapshots)
+3. There may be a limit to the number of arguments (VMs) that can be fed into an
+   rc script: TEST
+4. bhyveload has a 31 character VM name limit
+5. nmdm consoles are neither reliable nor predictable. Use tmux or screen.
+6. "detached" VM's do not auto-cleanup. There may not be a clean way to do this.
+
 
 Known Feature Requests
 
-1. Add to /usr/ports (Must shorten the above list first)
-2. Multiple Bridge Support (Move to bridge/tap/MAC address sets? How many max?)
-3. Make it behave like "the cloud thing we used at my last job, even though our
-   team hated it".
-4. Remove dependence on tap networking. (Suggestions? vnet? Not a bhyve issue)
-5. Remove non-bhyve functionality. (Wait until you need QEMU to configure a VM)
+Multiple Bridge Support (bridge/tap pairs?)
+VM MAC Address Support (Easy with one NIC, not for multiple)
 
-Ideas
-
-1. Support VirtualBox (Would require config file generation)
-2. Support OpenBSD sysjail and ldoms
-3. Support NetBSD/Xen
-
+Bugs, questions and/or comments:
 Michael Dexter <editor@callfortesting.org>
 

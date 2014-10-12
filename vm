@@ -19,7 +19,7 @@
 ############################################################ INFORMATION
 #
 # Title: virtual machine rc script
-# Version: v.0.7
+# Version: v.0.7.1
 #
 # rc(8) command script for managing virtual machines.
 #
@@ -250,7 +250,7 @@ echo Determining whether to use bhyveload or grub-bhyve
 if [ "$vm_os_type" = "freebsd" ]; then
 
 		if [ "$vm_dev_type" = "img" ]; then
-				echo Detaching any previous memory device attachments
+			echo Detaching any previous memory device attachments
 				f_mddestroy $1
 		fi
 
@@ -394,7 +394,13 @@ f_boot () # $host_vmdir $found ($1) ($vm_name from the multi-argument loop)
 
 	local console_flags=""
 	case $vm_console in
-		nmdm) console_flags="-s 5,lpc -l com1,/dev/nmdm${vm_id}A"
+		nmdm)
+			console_flags="-s 5,lpc -l com1,/dev/nmdm${vm_id}A"
+			echo Verifying if nmdm.ko is loaded
+			kldstat | grep -qw nmdm.ko || \
+			{ echo nmdm.ko not loaded. Loading ; \
+			kldload nmdm.ko ;} || \
+			{ echo nmdm.ko failed to load. Skipping ; return 1 ;}
 		;;
 		*) console_flags="-s 5,lpc -l com1,stdio"
 	esac
@@ -470,7 +476,7 @@ echo Running ifconfig tap$tap_prefix$tap_id$tap_unit create
 		ifconfig tap$tap_prefix$tap_id$tap_unit create
 #echo
 #echo Running ifconfig tap$tap_prefix$tap_id$tap_unit up
-#				ifconfig tap$tap_prefix$tap_id$tap_unit up 
+#		ifconfig tap$tap_prefix$tap_id$tap_unit up 
 echo
 echo Running ifconfig bridge$host_bridge addm tap$tap_prefix$tap_id$tap_unit up
 echo ifconfig bridge$host_bridge addm tap$tap_prefix$tap_id$tap_unit up >> \
@@ -531,20 +537,16 @@ local bhyve_cmd="/usr/sbin/bhyve \
 		f_mddestroy $1
 		;;
 	nmdm)
-		echo Verifying if nmdm.ko is loaded and load if necessary
-		kldstat | grep -qw nmdm.ko || \
-		{ echo nmdm.ko not loaded. Loading ; \
-		kldload nmdm.ko ;} || \
-		{ echo nmdm.ko failed to load. Skipping ; return 1 ;}
+		echo $bhyve_cmd > $host_vmdir/$1/${1}.log
 
 		echo
-		echo Booting $1 on console /dev/nmdm%uA
+		echo Remember to stop $1 after shutdown
+		echo
+		echo Booting $1 on console /dev/nmdm${vm_id}A
 
-( trap "f_stop $1" EXIT; eval "$bhyve_cmd" ) &
-
-# Alternatives to try:
+# FIX: This is not reliable with multiple VMs
+		( trap "f_stop $1" EXIT; eval "$bhyve_cmd" ) &
 #		eval $bhyve_cmd &
-#		echo $bhyve_cmd > $host_vmdir/$1/${1}.log
 #		eval $bhyve_cmd > /dev/null 2>&1 # Or direct to a logfile
 		;;
 	tmux)
@@ -575,7 +577,9 @@ eval $tmux_cmd
 		echo
 		echo Remember to stop $1 after shutdown
 		echo
-		echo Attach to $1 with: tmux attach-session -t $1
+		echo service vm attach $1
+		echo or
+		echo echo Attach to $1 with: tmux attach-session -t $1
 		echo
 		echo HINT: Ctrl-b d to detach from it
 		;;
@@ -625,9 +629,9 @@ f_stop() # $host_vmdir $vm_name ($1)
 		tap_base_id="$( printf "%02i" $vm_id)"
 
 		while [ $tap_count -lt 9 ]; do
-#		echo Checking for tap$tap_prefix${tap_base_id}$tap_count
-			ifconfig | grep -qw tap$tap_prefix${tap_base_id}$tap_count && \
-				{ echo Destroying tap$tap_prefix${tap_base_id}$tap_count ; \
+		echo Checking for tap$tap_prefix${tap_base_id}$tap_count
+		ifconfig | grep -qw tap$tap_prefix${tap_base_id}$tap_count && \
+		{ echo Destroying tap$tap_prefix${tap_base_id}$tap_count ; \
 		ifconfig tap$tap_prefix${tap_base_id}$tap_count destroy ; }
 				tap_count=$((tap_count+1))
 		done
@@ -702,11 +706,13 @@ echo Reading the $host_vmdir/$1/${1}.conf config file
 # FIX: Check here if the session in fact exists?
 		echo
 		echo Remember you can detach with \" CTRL-b d \"
+		export TERM=xterm
 		/usr/local/bin/tmux attach-session -t $1
 		;;
 	screen|screen-detached)
 		echo
 		echo Remember you can detach with \" C-a DD \"
+		export TERM=xterm
 		/usr/local/bin/screen -d -r $1
 		;;
 	*)
@@ -947,39 +953,41 @@ vm_start() # $vm_count $host_vmdir $vm_names
 	# Put your global preflight steps here:
 	# /etc/rc.d/pf stop # stop packet filtering on PC-BSD
 
+# Note that VMs start alphabetically, not by VM ID
 	case $vm_count in
 	0) echo ; echo Starting all VMs in $host_vmdir
-		local num_found
-		for vm_found in "$host_vmdir"/*; do
+		for vm_found in ${host_vmdir}/* ; do
+		[ -d $vm_found ] || { echo No VMs found. Exiting ; exit 1 ;}
+# Note from mkvm.sh.functions: if [ $( ls $1 | wc -l ) = 0 ]; then # None exist.
+			# vm_found will be full path and we must basename it
 			vm_name="${vm_found##*/}"
-			num_found=1
-
-				echo
-			echo Verifying if $vm_names is already loaded
-				[ -e /dev/vmm/$vm_names ] && \
-				{ echo $vm_names is already loaded. Skipping ; return 1 ;}
+			echo
+			echo vm_start: Verifying if $vm_name is already loaded
+			[ -e /dev/vmm/$vm_name ] && \
+		{ echo $vm_found is already loaded. Skipping ; return 1 ;}
 			echo Starting $vm_name
 
-			f_load $vm_name && f_boot $vm_name
+		f_load $vm_name && f_boot $vm_name
 # FIX: f_boot is still called if you quit out of the loader. workaround?
 		done
-		[ $num_found ] || \
-		{ echo No VMs found. Exiting ; exit 1 ; }
-	;;
-	1) echo ; echo Starting $vm_names
-						echo
-						echo Verifying if $vm_names is already loaded
+        ;;
+	1) echo ; echo Starting $vm_names ; echo
+		[ -d $vm_names ] || \
+			{ echo $vm_names not found. Exiting ; exit 1 ;}
+		echo Verifying if $vm_names is already loaded
 						[ -e /dev/vmm/$vm_names ] && \
 		{ echo $vm_names is already loaded. Skipping ; return 1 ;}
 			f_load $vm_names && f_boot $vm_names
 	;;
 	*) echo ; echo Starting VMs $vm_names
-		for vm_name in $vm_names; do
-						echo
-						echo Verifying if $vm_names is already loaded
-						[ -e /dev/vmm/$vm_names ] && \
-		{ echo $vm_names is already loaded. Skipping ; return 1 ;}
-
+		for vm_found in $vm_names; do
+		[ -d $vm_found ] || { echo No VMs found. Exiting ; exit 1 ;}
+			# vm_found will be full path and we must basename it
+			vm_name="${vm_found##*/}"
+			echo
+			echo Verifying if $vm_names is already loaded
+			[ -e /dev/vmm/$vm_name ] && \
+		{ echo $vm_name is already loaded. Skipping ; return 1 ;}
 			echo
 			echo Starting $vm_name
 			f_load $vm_name && f_boot $vm_name
@@ -991,10 +999,10 @@ vm_stop() # $vm_names $vm_count
 {
 	case $vm_count in
 	0) echo ; echo Stopping all VMs in $host_vmdir
-		local num_found
-		for vm_found in "$host_vmdir"/*; do
+		for vm_found in ${host_vmdir}/* ; do
+		[ -d $vm_found ] || { echo No VMs found. Exiting ; exit 1 ;}
+			# vm_found will be full path and we must basename it
 			vm_name="${vm_found##*/}"
-			num_found=1
 		if [ ! -e /dev/vmm/$vm_name ]; then
 			echo $vm_name is not loaded. Skipping
 		else
@@ -1004,15 +1012,18 @@ vm_stop() # $vm_names $vm_count
 			f_mddestroy $vm_name
 		fi
 		done
-		[ $num_found ] || \
-		{ echo No VMs Found. Exiting ; exit 1 ; }
 	;;
 	1) echo ; echo Stopping $vm_names
+		[ -d $vm_names ] || \
+			{ echo $vm_names not found. Exiting ; exit 1 ;}
 			f_stop $vm_names
 			f_mddestroy $vm_names
 	;;
 	*) echo ; echo Stopping VMs $vm_names
-		for vm_name in $vm_names; do
+		for vm_found in ${host_vmdir}/* ; do
+		[ -d $vm_found ] ||  { echo No VMs found. Exiting ; exit 1 ;}
+			# vm_found will be full path and we must basename it
+			vm_name="${vm_found##*/}"
 			f_stop $vm_name
 			f_mddestroy $vm_name
 		done
@@ -1024,7 +1035,7 @@ vm_restart()
 	case $vm_count in
 	0) echo ; echo Restarting all VMs in $host_vmdir
 		local num_found
-		for vm_found in "$host_vmdir"/*; do
+		for vm_found in ${host_vmdir}/* ; do
 			[ -d $host_vmdir/$vm_name ] || continue # FIX: why?
 			vm_name="${vm_found##*/}"
 			num_found=1

@@ -19,7 +19,7 @@
 ############################################################ INFORMATION
 # 
 # Title: make VM script function library
-# Version: v.0.7
+# Version: v.0.7.1
 #
 # Functions used by the mkvm.sh Virtual Machine provisioning script
 #
@@ -987,23 +987,60 @@ f_set_password_debug() ## $1 mount point ##
 # Get the next available VMID in ~/vmrc/vm/
 #
 # BUG: Is this triple digit safe?
-f_getnextid() ## $1 vhost_vmdir from /usr/local/etc/vm.conf
+f_getnextid() ## $1 host_vmdir from /usr/local/etc/vm.conf
 {
 		local nextid=0 # Initialize to 0
+		local conflict=""
 
 	if [ $( ls $1 | wc -l ) = 0 ]; then # None exist. A better test?
+# Note -d check in vm_start
 		echo $nextid # Use the initialized zero
-		exit
+		exit 0
 	else
-		for vm_found in ${1}/*; do			 # Full path name
-			vm_foundname="${vm_found##*/}" # Strip path
-			vm_foundid="${vm_foundname##*[!0-9]}"
-			if [ $vm_foundid -gt $nextid ]; then
-				nextid=$vm_foundid
+		while :; do # Loop until satisfied - risky?
+			for vm_found in ${1}/* ; do # Full path name
+        	                vm_foundname="${vm_found##*/}" # Strip path
+                	        vm_foundid="${vm_foundname##*[!0-9]}"
+                        	if [ "$vm_foundid" = "$nextid" ]; then
+					conflict="yes"
+				fi
+			done # Pass completed
+			if [ "$conflict" = "yes" ]; then
+				nextid=$(($nextid+1))
+				conflict="" # Reset "conflict" !
+			else
+				echo $nextid
+				exit 0
 			fi
 		done
 	fi
-		nextid=$(($nextid+1))
-		echo $nextid
 }
 
+# f_checkconflicts
+#
+# Check for conflicting VM IDs
+#
+f_checkconflicts() ## $1 host_vmdir from /usr/local/etc/vm.conf
+{
+	if [ $( ls $1 | wc -l ) = 0 ]; then # None exist. A better test?
+		echo No VMs in ${1}. Exiting
+		exit 0
+	fi
+
+local conflict=""
+
+# Loop through and check all VMs for each VM found
+	for vm_found in ${1}/* ; do # Full path name
+		vm_foundname="${vm_found##*/}" # Strip path
+		vm_foundid="${vm_foundname##*[!0-9]}"
+		for vm_check in ${1}/* ; do # Full path name
+			vm_checkname="${vm_check##*/}" # Strip path
+			vm_checkid="${vm_checkname##*[!0-9]}"
+			if [ "$vm_foundname" = "$vm_checkname" ]; then
+				continue # Ignore self
+			elif [ "$vm_foundid" = "$vm_checkid" ]; then
+			echo VMs $vm_foundname and $vm_checkname conflict!
+			fi
+		done
+	done
+}

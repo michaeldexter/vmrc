@@ -17,7 +17,7 @@
 ############################################################ INFORMATION
 #
 # Title: virtual machine rc script instructions
-# Version: v.0.7
+# Version: v.0.7.1
 #
 # vmrc usage instructions and developer notes
 #
@@ -27,6 +27,14 @@ Thank you for trying vmrc, the Virtual Machine rc script.
 
 Latest development snapshot: http://vmrc.bsd.lv/vmrc-snapshot.tar
 GitHub repository: https://github.com/michaeldexter/vmrc
+
+NOTABLE CHANGES from .0.7 to .0.7.1
+
+* Fixed several multiple VM start bugs
+* Fixed "attach" for tmux and screen
+* Multiple nmdm consoles still need work
+* Added smarter "nextid" function
+* Added a check-for-ID-conflicts function to mkvm.sh
 
 SIGNIFICANT CHANGES from .0.6.1 to .0.7
 
@@ -120,6 +128,7 @@ OK: vm0, freebsd1, openbsd2
 
 CONFLICTING: vm0, freebsd0 and openbsd0 (trailing ID number must be unique)
 
+As of version 0.7.1, mkvm.sh will check for and report ID conflicts
 
 Once a VM is provisioned, it is managed with the "vm" rc script which can be
 enabled in the host's /usr/local/etc/rc.conf, i.e.:
@@ -324,8 +333,13 @@ nmdm: "~ CTRL-d"
 tmux: "CTRL-b d"
 screen: "C-a DD"
 
-Note: There is a bug in FreeBSD 10.0R that would cause the VM to boot only
-upon first attachment.
+Notes:
+
+* There is a bug in FreeBSD 10.0R that would cause the VM to boot only
+  upon first attachment.
+* nmdm consoles do not appear to be reliable with multiple VMs. Work needed.
+  tmux or screen ones sould be considred but note that their VMs are not
+  automatically destroyed after VM shutdown because of their detached nature.
 
 
 ### NETWORKING ###

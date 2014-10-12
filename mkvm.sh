@@ -19,7 +19,7 @@
 ############################################################ INFORMATION
 #
 # Title: make VM script
-# Version: v.0.7
+# Version: v.0.7.1
 #
 # Script to provision FreeBSD Virtual Machines for use with vmrc
 #
@@ -63,7 +63,7 @@ if [ $# -gt 0 ]; then # Non-interactive mode
 	echo -------------------------------------------------------------
 	echo The requested template is $1
 
-#[ $2 = "" ] && echo No VM name specified. Exiting ; exit 1
+[ $2 ] || { echo No VM name specified. Exiting ; exit 1 ; }
 
 	template=$1
 	vm_name=$2$vm_id	
@@ -248,9 +248,9 @@ for distset in $site_payload; do
 # allow for offline use
 		fetch -m $install_site$site_path$distset -o \
 		$host_distdir/$site_path/
-				if [ ! -f $host_distdir/$site_path$distset ]; then
-			echo Distribution set did not fetch. Exiting
-					exit 1
+			if [ ! -f $host_distdir/$site_path$distset ]; then
+				echo Distribution set did not fetch. Exiting
+				exit 1
 			fi
 	fi
 done
@@ -290,13 +290,13 @@ case $install_method in # Note that gunzip will take .xz, .gz, .bz2, .Z!
 			fsck_ufs -y $vm_device$vm_dev_root
 
 			echo
-						echo Mounting $vm_device$vm_dev_root on $vm_mountpoint
-						mount /dev/$vm_device$vm_dev_root $vm_mountpoint
+			echo Mounting $vm_device$vm_dev_root on $vm_mountpoint
+			mount /dev/$vm_device$vm_dev_root $vm_mountpoint
 
-				echo
-				echo Verifying that VM mounted on its mount point
-				( mount | grep -qw $vm_name/mnt ) || \
-				{ echo $1 did not mount. Exiting ; exit 1 ; }
+			echo
+			echo Verifying that VM mounted on its mount point
+			( mount | grep -qw $vm_name/mnt ) || \
+			{ echo $1 did not mount. Exiting ; exit 1 ; }
 # BUG: Note that the md will remain
 
 			echo
@@ -316,6 +316,10 @@ case $install_method in # Note that gunzip will take .xz, .gz, .bz2, .Z!
 
 				echo
 				echo Directory structure ready and raw VM image fetched
+
+				echo Checking for VM ID conflicts
+				f_checkconflicts $host_vmdir
+
 				echo
 				echo You can boot your VM with:
 				echo service vm onestart $vm_name
@@ -324,34 +328,37 @@ case $install_method in # Note that gunzip will take .xz, .gz, .bz2, .Z!
 
 	;;
 	isoimg)
-				case $payload_compressed in
-				yes) echo ; echo Extracting $site_payload to ${vm_name}.iso
-				gunzip -c $host_distdir/$site_path/$site_payload > \
-						$host_vmdir/$vm_name/${vm_name}.iso
+		case $payload_compressed in
+		yes) echo ; echo Extracting $site_payload to ${vm_name}.iso
+		gunzip -c $host_distdir/$site_path/$site_payload > \
+			$host_vmdir/$vm_name/${vm_name}.iso
 # BUG: Need a suffix-removal routine to link uncompressed ISOs. Or put in cfg
 # Note: Who is shipping uncompressed ISOs?
-				;;
-				"") echo ; echo Linking $site_payload to ${vm_name}.iso
-				ln -sf $host_distdir/$site_path/$site_payload \
-						$host_vmdir/$vm_name/${vm_name}.iso
-				esac
+	;;
+	"") echo ; echo Linking $site_payload to ${vm_name}.iso
+		ln -sf $host_distdir/$site_path/$site_payload \
+			$host_vmdir/$vm_name/${vm_name}.iso
+	esac
 
-				if [ ! -f $host_vmdir/$vm_name/${vm_name}.iso ]; then
-						echo ${vm_name}.iso Failed to extract or link. Exiting
-						exit 1
-				fi
-		echo
-		echo Directory structure ready and ISO fetched.
-		echo
-				echo Note that FreeBSD ISO installations may require
-				echo this modication to /etc/ttys to boot properly:
-				echo
-				echo "ttyu0 \"/usr/libexec/getty 3wire.9600\" vt100 on secure"
-				echo
-		echo You can boot your VM with:
-		echo service vm oneiso $vm_name
-		echo
+	if [ ! -f $host_vmdir/$vm_name/${vm_name}.iso ]; then
+		echo ${vm_name}.iso Failed to extract or link. Exiting
 		exit 1
+	fi
+	echo
+	echo Directory structure ready and ISO fetched.
+	echo
+	echo Note that FreeBSD ISO installations may require
+	echo this modication to /etc/ttys to boot properly:
+	echo
+	echo "ttyu0 \"/usr/libexec/getty 3wire.9600\" vt100 on secure"
+	echo
+	echo Checking for VM ID conflicts
+	f_checkconflicts $host_vmdir
+	echo
+	echo You can boot your VM with:
+	echo service vm oneiso $vm_name
+	echo
+	exit 1
 
 esac # ISO image installs are done at this point
 
@@ -363,13 +370,13 @@ echo Verifying that we are continuing with an artisnal FreeBSD provision
 echo
 echo Verifying that we are continuing with an artisnal FreeBSD provision
 if [ "$vm_os_type" = "freebsd" ]; then
-		case $install_method in
-				distset) continue ;;
-				obj) continue ;;
-				iso) exit 1 ;;
-				rawimg) exit 1 ;;
-				*) echo How did you get this far? ; exit 1
-		esac
+	case $install_method in
+		distset) continue ;;
+		obj) continue ;;
+		iso) exit 1 ;;
+		rawimg) exit 1 ;;
+		*) echo How did you get this far? ; exit 1
+	esac
 fi
 
 # Initialize vm_device variable
@@ -378,7 +385,7 @@ echo Continuing with FreeBSD artisnal provisioning
 echo
 echo Initializing the vm_device variable
 case $vm_dev_type in
-		device) # Use the device specified in the configuration file
+	device) # Use the device specified in the configuration file
 			   return
 		;;
 		malloc) # Continue with the attached malloc device
@@ -389,7 +396,7 @@ case $vm_dev_type in
 		{ echo ${vm_name}.img failed to attach. Exiting ; exit 1 ; }
 	;;
 	zvol) # Use the zvol that was created
-				vm_device=zvol/$host_zpool/$vm_name
+		vm_device=zvol/$host_zpool/$vm_name
 esac
 
 echo
@@ -706,6 +713,10 @@ else
 	echo Detaching memory device $vm_device
 	mdconfig -du $vm_device
 fi
+
+echo
+echo Checking for VM ID conflicts
+f_checkconflicts $host_vmdir
 
 echo
 echo You can boot your VM with:
