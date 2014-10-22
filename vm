@@ -975,7 +975,7 @@ vm_start() # $vm_count $host_vmdir $vm_names
 		[ -d $vm_names ] || \
 			{ echo $vm_names not found. Exiting ; exit 1 ;}
 		echo Verifying if $vm_names is already loaded
-						[ -e /dev/vmm/$vm_names ] && \
+			[ -e /dev/vmm/$vm_names ] && \
 		{ echo $vm_names is already loaded. Skipping ; return 1 ;}
 			f_load $vm_names && f_boot $vm_names
 	;;
