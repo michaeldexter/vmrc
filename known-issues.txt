@@ -2,17 +2,16 @@ Known vmrc Issues
 
 1. Many GNU/Linux are configured for ISO boot but not hd0 boot. Know GNU/Linux?
 2. Templates prefixed with dyn_ need frequent updating. (i.e. snapshots)
-3. There may be a limit to the number of arguments (VMs) that can be fed into an
-   rc script: TEST
-4. bhyveload has a 31 character VM name limit
+3. bhyveload has a 31 character VM name limit
 5. nmdm consoles are neither reliable nor predictable. Use tmux or screen.
-6. "detached" VM's do not auto-cleanup. There may not be a clean way to do this.
 
 
 Known Feature Requests
 
 Multiple Bridge Support (bridge/tap pairs?)
 VM MAC Address Support (Easy with one NIC, not for multiple)
+Suggestions how to store these mappings?
+libvirt support
 
 Bugs, questions and/or comments:
 Michael Dexter <editor@callfortesting.org>

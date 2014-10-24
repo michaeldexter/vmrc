@@ -18,8 +18,7 @@ vm_addtl_nics=""         # "1" through "7" (tap8<2 digit vm_id>[PCI unit 1-7]
 # VM runtime boot variables
 vm_cpus="1"              # Number of VM virtual CPUs (max 16) (required)
 vm_ram="1024"            # VM RAM Allocation in MB (required)
-vm_console="stdio"       # "stdio", "nmdm", "tmux", "tmux-detached",
-                         # "screen", or "screen-detached" (required)
+vm_console="stdio"       # "stdio", "tmux" or "screen"
 virtio_type="ahci-hd"    # "ahci-hd" or "virtio-blk" (required)
 
 # OS-specific VM runtime boot variables
@@ -46,7 +45,7 @@ install_site="http://iso.cdn.pcbsd.org"
 #install_site="file://"  # Local payload option once downloaded (choose one)
 site_path="/10.1-RELEASE/amd64/"
                          # Distribution payload directory path
-site_payload="TRUEOS10.1-PRERELEASE-10-03-2014-x64-DVD-USB.iso"
+site_payload="TRUEOS10.1-RC1-10-22-2014-x64-DVD-USB.iso"
                          # Distribution payload file(s) (space separated)
 payload_compressed=""    # "yes" if compressed ISO or rawimg payload
 requires_tty="yes"       # "yes" if a serial tty is required (FreeBSD only)

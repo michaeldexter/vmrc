@@ -17,7 +17,7 @@
 ############################################################ INFORMATION
 #
 # Title: virtual machine rc script instructions
-# Version: v.0.7.1
+# Version: v.0.8
 #
 # vmrc usage instructions and developer notes
 #
@@ -27,6 +27,21 @@ Thank you for trying vmrc, the Virtual Machine rc script.
 
 Latest development snapshot: http://vmrc.bsd.lv/vmrc-snapshot.tar
 GitHub repository: https://github.com/michaeldexter/vmrc
+
+NOTABLE CHANGES from .0.7.1 to .0.8
+
+"Less dev-y, more ops-y"
+
+* Reworked "start" to call rebootable VMs with tmux or screen consoles along
+  the lines of vmrun.sh for "always on" use
+* (SPECIFY A TMUX OR SCREEN CONSOLE FOR "START" TO WORK)
+* Removed "detached" tmux and screen console modes. Both are now detached
+* "start" directive will ignore non-backgrounded consoles (smooth host boot!)
+* Added runvm.sh-style loop to tmux and screen console modes for hosting use
+* All tmux and screen console modes are now "detached" for hosting use
+* Disabled nmdm console mode for now
+* Removed multiple argument VM start/stop (now all or one VM)
+* Various clean-up along the way
 
 NOTABLE CHANGES from .0.7 to .0.7.1
 
@@ -85,9 +100,9 @@ OSs that require VirtIO and console adjustments prior to booting under bhyve.
 
 ### REQUIREMENTS ###
 
-The Intel "POPCNT" (EPT) processor feature is required for bhyve operation.
+The Intel or AMD "POPCNT" (EPT) processor feature is required for bhyve.
 
-vmrc requires the bhyve hypervisor, available in FreeBSD 10.0, 10.1 and 11.0
+vmrc requires the bhyve hypervisor, available in FreeBSD and newer.
 
 
 ### CHEAT SHEET ###
@@ -124,11 +139,12 @@ dist:   Binary Distribution Set Installation Method
 
 All vmrc VMs are distinguished by unique trailing ID numbers:
 
-OK: vm0, freebsd1, openbsd2
+NON CONFLICTING: vm0, freebsd1, openbsd2
 
 CONFLICTING: vm0, freebsd0 and openbsd0 (trailing ID number must be unique)
 
 As of version 0.7.1, mkvm.sh will check for and report ID conflicts
+
 
 Once a VM is provisioned, it is managed with the "vm" rc script which can be
 enabled in the host's /usr/local/etc/rc.conf, i.e.:
@@ -138,6 +154,19 @@ enabled in the host's /usr/local/etc/rc.conf, i.e.:
 if enabled in /usr/local/etc/rc.conf :
 
 /usr/local/etc/rc.d/vm start freebsd0
+
+NB! You must set a "tmux" or "screen" console type for the "start" directive
+to work and install ether "tmux" or "screen".
+
+
+VMs can also be loaded, booted and stopped in a linear manner for debugging:
+
+/usr/local/etc/rc.d/vm load freebsd0
+/usr/local/etc/rc.d/vm boot freebsd0
+/usr/local/etc/rc.d/vm stop freebsd0
+
+
+### ISO MODE ###
 
 Templates with "iso" in their names are installed by booting to ISO images
 and formatting their storage devices with the OS's native installer. These are  
@@ -149,6 +178,9 @@ Once the OS is installed from ISO, these can be booted with the standard
 'start' directive:
 
 service vm start openbsd4
+
+
+### GRUB MODE ###
 
 The 'grub' directive exists to launch the VM in the GRUB boot loader. This is
 particularly useful for determining the on-disk layout of the operating system.
@@ -254,9 +286,8 @@ grub-bhyve kfreebsd support is experimental.
 ### DIRECTIVE USAGE ###
 
 The 'start', 'stop' and 'status' will act on all VMs in /usr/local/vm/ or
-multiple specified VMs i.e.:
+a specified VM i.e.:
 
-service vm onestart vm0 vm2 vm3   (start three spcific VMs)
 service vm onestop                (stop all VMs)
 service vm onestatus freebsd0     (status for one VM)
 
@@ -269,8 +300,8 @@ start		Load and boot all VMs in /usr/local/vm/
 stop		Ungracefully terminate all VMs in /usr/local/vm/
 status		List running VMs
 
-Issue a "reboot" within the VM to shut it down. Cleaner ACPI shutdown is
-available after the 10.0-RELEASE and is included in vmrc.
+"reboot" and "shutdown" within VM should work as expected.
+An ACPI shutdown is available after the 10.0-RELEASE and is included in vmrc.
 
 VM-specific commands (i.e. /etc/rc.d/vm attach vm0)
 
@@ -292,8 +323,8 @@ delete		Delete a VM and its images and directory tree
 
 ### VM LAYOUT ###
 
-/usr/local/vmrc/vm/distributions/  OS distribution sets and ISOs
-/usr/local/vmrc/vm/templates/      VM templates
+/usr/local/vmrc/distributions/  OS distribution sets and ISOs
+/usr/local/vmrc/templates/      VM templates
 /usr/local/vmrc/vm/vm#/vm#.conf    VM config file
 /usr/local/vmrc/vm/vm#/vm#.img     VM raw disk image (format or copy in)
 /usr/local/vmrc/vm/vm#/vm#.iso     Link to bootable ISO image (fetch or copy in)
@@ -308,38 +339,32 @@ bridge or perform any VM cleanup.
 
 ### CONSOLES ###
 
-The included templates direct each VM's console output to the host terminal or
-console from which they are booted. This is not ideal if starting VMs during
-host startup.
+Because bhyve console output is inherently captive, vmrc supports several
+"console" options:
 
-Alternatively, VM console output can be directed to nmdm, tmux or screen
-sessions rather than standard I/O. nndm consoles are supported by FreeBSD's
-included cu(1) command while tmux and screen require the respective ports or
-packages to be installed.
+stdio	Output the VM console to the console from which a VM is started
+tmux	Output the VM console to a detached tmux session
+screen	Output the VM console to a detached screen session
+nmdm	Use an "nmdm" serial console and cu(1) (currently disabled)
 
-To change to a detachable console, change the "vm_console" variable in the VM
-configuration file from "stdio" to "nmdm", "tmux", "tmux-detached", "screen"
-or "screen-detached" with "detached" indicating that it will be backgrounded/
-detached automatically upon boot which would be suitable for use during host
-startup. The "nmdm" console is detached by default.
+The included templates are set to "stdio" and must be set to "tmux" or "screen"
+to be used with the "start" directive.
 
-To attach to a detached console, use the "attach" directive:
+To attach to a tmux or screen console, use the "attach" directive:
 
 /usr/local/etc/rc.d/vm oneattach freebsd3
 
 To detach from each console, type:
 
-nmdm: "~ CTRL-d"
 tmux: "CTRL-b d"
 screen: "C-a DD"
+nmdm: "~ CTRL-d" (currently disabled)
 
 Notes:
 
-* There is a bug in FreeBSD 10.0R that would cause the VM to boot only
+* There is a bug in FreeBSD 10.0R nmdm that would cause the VM to boot only
   upon first attachment.
 * nmdm consoles do not appear to be reliable with multiple VMs. Work needed.
-  tmux or screen ones sould be considred but note that their VMs are not
-  automatically destroyed after VM shutdown because of their detached nature.
 
 
 ### NETWORKING ###
@@ -361,6 +386,7 @@ vmrc has been tested on PC-BSD 10-STABLE and FreeBSD 11-CURRENT from
 July 1st, 2014 onward.
 
 tmux functionality requires ports/sysutils/tmux
+screen functionality requires ports/sysutils/screen
 ISO and non-FreeBSD VM support requires ports/sysutils/grub2-bhyve 
 QEMU functionality requires ports/emulators/qemu(-devel)
 

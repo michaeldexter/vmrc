@@ -19,7 +19,7 @@
 ############################################################ INFORMATION
 #
 # Title: Check Templates Script
-# Version: v.0.7
+# Version: v.0.8
 
 # This is a simple script that use 'wget -q --spider' to verify that all of
 # the downloadable images in the templates are still accessible.
@@ -35,12 +35,12 @@ for link in "$host_distdir"/*; do
 	case $install_method in
 	rawimg|isoimg)
 		wget -q --spider $install_site/$site_path/$site_payload || \
-		echo "$install_site/$site_path/$site_payload missing!"
+		echo "$link: $install_site/$site_path/$site_payload missing!"
 	;;
 	distset)
 	for distset in $site_payload; do
 		wget -q --spider $install_site/$site_path/$distest || \
-		echo "$install_site/$site_path/$site_payload missing!"
+		echo "$link: $install_site/$site_path/$site_payload missing!"
 	done
 	;;
 	obj)
