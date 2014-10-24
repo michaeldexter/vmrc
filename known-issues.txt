@@ -11,7 +11,7 @@ Known Feature Requests
 Multiple Bridge Support (bridge/tap pairs?)
 VM MAC Address Support (Easy with one NIC, not for multiple)
 Suggestions how to store these mappings?
-libvirt support
+API support
 
 Bugs, questions and/or comments:
 Michael Dexter <editor@callfortesting.org>
