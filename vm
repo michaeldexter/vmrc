@@ -19,7 +19,7 @@
 ############################################################ INFORMATION
 #
 # Title: virtual machine rc script
-# Version: v.0.8
+# Version: v.0.8.1
 #
 # rc(8) command script for managing virtual machines.
 #
@@ -162,7 +162,7 @@ f_load() # $host_vmdir from vm.conf $vm_names ($1)
 {
 [ $1 ] || { echo f_load Invalid input. Skipping ; return 1 ; }
 
-# Run check disabled for vm_run use
+# Loaded check disabled for vm_run use
 #echo
 #echo Verifying if $1 is already loaded
 #	[ -e /dev/vmm/$1 ] && \
@@ -197,8 +197,7 @@ echo Reading the $host_vmdir/$1/${1}.conf config file
 
 echo
 echo Checking if we are in ISO boot mode to inform f_boot
-		[ "$vm_cmd" = "iso" ] &&
-		vm_dev_type="iso"
+	[ "$vm_cmd" = "iso" -o "$vm_cmd" = "oneiso" ] && vm_dev_type="iso"
 
 echo
 echo Setting the vm_device variable
@@ -207,8 +206,8 @@ case $vm_dev_type in # device and malloc are already set
 		vm_device=/dev/$vm_device
 		;;
 	malloc) echo prefixing $vm_device from the VM config file with /dev
-				vm_device=/dev/$vm_device
-				;;
+		vm_device=/dev/$vm_device
+		;;
 	img) vm_device=$host_vmdir/$1/${1}.img ;;
 		iso) vm_device=$host_vmdir/$1/${1}.iso ;;
 	zvol) vm_device=/dev/zvol/${host_zpool}/$1 ;;
@@ -260,7 +259,7 @@ echo
 echo Determining whether to use bhyveload or grub-bhyve
 if [ "$vm_os_type" = "freebsd" ]; then
 
-# $vm_device will be ~.iso if in isoboot - fine for FreeBSD
+# $vm_device will be ~.iso if $vm_cmd is "iso" or "oneiso" - fine for FreeBSD
 
 	echo
 	echo Using bhyveload
@@ -285,24 +284,24 @@ else # Use grub-bhyve
 
 # Note that we do not set the iso as $vm_device because grub will handle this
 	echo
-		echo Creating $host_vmdir/$1/device.map
-		echo "(hd0) $host_vmdir/$1/${1}.img" > $host_vmdir/$1/device.map 
+	echo Creating $host_vmdir/$1/device.map
+	echo "(hd0) $host_vmdir/$1/${1}.img" > $host_vmdir/$1/device.map 
 
 # The ISO *should* be there but this check will avoid breakage
 	echo
 	echo Checking if we are in ISO boot mode
-		[ "$vm_cmd" = "iso" ] && echo Confirmed ;
-		echo "(cd0) $host_vmdir/$1/${1}.iso" >> $host_vmdir/$1/device.map
+	[ "$vm_cmd" = "iso" -o "$vm_cmd" = "oneiso" ] && echo Confirmed ;
+	echo "(cd0) $host_vmdir/$1/${1}.iso" >> $host_vmdir/$1/device.map
 
+	echo
+	echo Using the device.map:
+	cat $host_vmdir/$1/device.map
+
+	if [ "$vm_cmd" = "iso" -o "$vm_cmd" = "oneiso" ]; then
 		echo
-		echo Using the device.map:
-		cat $host_vmdir/$1/device.map
-
-		if [ "$vm_cmd" = "iso" ]; then
-			echo
-			echo Generating the $1 grub.cfg # From the config file
-			echo -e $iso_grub_cfg > $host_vmdir/$1/grub.cfg || \
-					{ echo grub.cfg generation failed ; return 1 ; } 
+		echo Generating the $1 grub.cfg # From the config file
+		echo -e $iso_grub_cfg > $host_vmdir/$1/grub.cfg || \
+			{ echo grub.cfg generation failed ; return 1 ; } 
 
 		grub_load_cmd="/usr/local/sbin/grub-bhyve $iso_grub_d $iso_grub_r -m $host_vmdir/$1/device.map -M $vm_ram $1"
 
@@ -426,8 +425,8 @@ f_boot () # $host_vmdir $found ($1) ($vm_name from the multi-argument loop)
 #	esac
 
 	local iso_flags=""
-# NOTE that $iso_boot is set to "isobootyes" by vm_iso().
-	[ "$vm_cmd" = "iso" ] &&
+# NOTE that we are relying on $vm_cmd to be "iso" or "oneiso"
+	[ "$vm_cmd" = "iso" -o "$vm_cmd" = "oneiso" ] &&
 		iso_flags="-s 4,ahci-cd,$host_vmdir/$1/$1.iso"
 
 	local device_flags=""
@@ -959,7 +958,7 @@ vm_start() # $vm_count $host_vmdir $vm_names
 			echo
 			echo vm_start: Verifying if $vm_name is already loaded
 			[ -e /dev/vmm/$vm_name ] && \
-		{ echo $vm_found is already loaded. Skipping ; return 1 ;}
+			{ echo $vm_found is already loaded. Skipping ; return 1 ;}
 			echo Starting $vm_name
 
 			echo
@@ -1002,13 +1001,13 @@ vm_start() # $vm_count $host_vmdir $vm_names
 # Note that ps -ww is your friend when debugging tmux command execution
 
 echo
-echo Launching detached tmux session for $vm_name
+echo Launching detached tmux session for $vm_names
 echo
 echo You can attach with:
 echo
-echo service vm attach $vm_name
+echo service vm attach $vm_names
 echo or
-echo tmux attach-session -t $vm_name
+echo tmux attach-session -t $vm_names
 echo
 echo HINT: Ctrl-b d to detach from it
 
@@ -1279,7 +1278,7 @@ vm_iso() # $vm_names ($1)
 	;;
 	1) echo ; echo booting the ISO for VM $vm_names
 #		iso_boot="isobootyes" # inform f_boot() to use the VM's ISO
-# Now relying on $vm_cmd which would be set to "iso"
+# Now relying on $vm_cmd which would be set to "iso" or "oneiso"
 		f_load $vm_names && f_boot $vm_names
 	;;
 	*) echo ; echo Please specify a single VM by name
@@ -1435,9 +1434,9 @@ iso_boot="" # Used by f_boot and vm_iso
 
 echo
 echo Reading /usr/local/etc/vm.conf
-		[ -f /usr/local/etc/vm.conf ] && . /usr/local/etc/vm.conf
-		[ $host_vmdir ] || \
-		{ echo /usr/local/etc/vm.conf failed to source. Exiting ; exit 1 ; }
+	[ -f /usr/local/etc/vm.conf ] && . /usr/local/etc/vm.conf
+	[ $host_vmdir ] || \
+	{ echo /usr/local/etc/vm.conf failed to source. Exiting ; exit 1 ; }
 
 load_rc_config $name
 
