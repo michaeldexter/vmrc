@@ -17,7 +17,7 @@
 ############################################################ INFORMATION
 #
 # Title: virtual machine rc script instructions
-# Version: v.0.8.3
+# Version: v.0.8.5
 #
 # vmrc usage instructions and developer notes
 #
@@ -28,6 +28,7 @@ Thank you for trying vmrc, the Virtual Machine rc script.
 Latest development snapshot: http://vmrc.bsd.lv/vmrc-snapshot.tar
 GitHub repository: https://github.com/michaeldexter/vmrc
 
+.0.8.5: Enabled OpenBSD reboot. Updated flashrd version
 .0.8.4: Bug fixes
 
 NOTABLE CHANGES from .0.8.2 to .0.8.3

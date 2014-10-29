@@ -41,9 +41,9 @@ install_method="rawimg"  # "rawimg", "isoimg", "distset" or "obj"
 install_site="http://www.nmedia.net"
                          # Distribution payload site i.e. ftp://ftp.freebsd.org
 #install_site="file://"  # Local payload option once downloaded (choose one)
-site_path="/flashrd/images/20140405/"
+site_path="/flashrd/images/20141011/"
                          # Distribution payload directory path
-site_payload="flashimg.amd64.com0-20140405.gz"
+site_payload="flashimg.amd64.com0-20141011.gz"
                          # Distribution payload file(s) (space separated)
 payload_compressed="yes" # "yes" if compressed ISO or rawimg payload  
 requires_tty=""          # "yes" if a serial tty is required (FreeBSD only)

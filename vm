@@ -19,7 +19,7 @@
 ############################################################ INFORMATION
 #
 # Title: virtual machine rc script
-# Version: v.0.8.4
+# Version: v.0.8.5
 #
 # rc(8) command script for managing virtual machines.
 #
@@ -281,6 +281,12 @@ else # Use grub-bhyve
 #	echo Using grub-bhyve and checking if installed
 		[ -x /usr/local/sbin/grub-bhyve ] || \
 { echo "grub-bhyve is missing \(ports/sysutils/grub2-bhyve\)" ; return 1 ; }
+
+#	echo
+#echo Verifying if $1 is already loaded
+# Needed: grub does not do the cleanup that bhyveload does
+	[ -e /dev/vmm/$1 ] && \
+{ echo Destroying $1 ; /usr/sbin/bhyvectl --destroy --vm=$1 > /dev/null 2>&1 ;}
 
 # Note that we do not set the iso as $vm_device because grub will handle this
 #	echo
@@ -736,6 +742,7 @@ f_grub() # $vm_names ($1)
 
 #	echo
 #	echo Verifying if $1 is already loaded
+# Needed: grub does not do the cleanup that bhyveload does
 		[ -e /dev/vmm/$1 ] && \
 { echo Destroying $1 ; /usr/sbin/bhyvectl --destroy --vm=$1 > /dev/null 2>&1 ;}
 
@@ -747,11 +754,11 @@ f_grub() # $vm_names ($1)
 
 case $vm_dev_type in # device and malloc are already set
 		device) # echo prefixing $vm_device from the VM config file with /dev
-				$vm_device=$vm_device/dev
-				;;
+			$vm_device=$vm_device/dev
+			;;
 		malloc) # echo prefixing $vm_device from the VM config file with /dev
-				$vm_device=$vm_device/dev
-				;;
+			$vm_device=$vm_device/dev
+			;;
 		img) vm_device=$host_vmdir/$1/${1}.img ;;
 		zvol) vm_device=/dev/zvol/${host_zpool}/$1 ;;
 		*) echo vm_dev_type was not set. Exiting ; exit 1
@@ -1000,7 +1007,7 @@ vm_start() # $vm_count $host_vmdir $vm_names
 	1) echo ; echo Starting $vm_names ; echo
 		[ -d $host_vmdir/$vm_names ] || \
 			{ echo $vm_names not found. Exiting ; exit 1 ;}
-		echo Verifying if $vm_names is already loaded
+#		echo Verifying if $vm_names is already loaded
 			[ -e /dev/vmm/$vm_names ] && \
 		{ echo $vm_names is already loaded. Skipping ; return 1 ;}
 
@@ -1099,7 +1106,7 @@ vm_run() # $host_vmdir $vm_names ($1)
 # The vmrun.sh-sytle while loop
 while [ 1 ]; do
 
-	f_load $vm_names > /dev/null 2>&1
+	f_load $vm_names #> /dev/null 2>&1
 	bhyve_exit=$?
 	if [ $bhyve_exit -ne 0 ]; then
 		f_stop $vm_names > /dev/null 2>&1
@@ -1108,7 +1115,7 @@ while [ 1 ]; do
 # f_boot too...
 	fi
 
-	f_boot $vm_names > /dev/null 2>&1
+	f_boot $vm_names #> /dev/null 2>&1
 	bhyve_exit=$?
 	if [ $bhyve_exit -ne 0 ]; then
 		f_stop $vm_names > /dev/null 2>&1
