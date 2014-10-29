@@ -19,7 +19,7 @@
 ############################################################ INFORMATION
 #
 # Title: virtual machine rc script
-# Version: v.0.8.3
+# Version: v.0.8.4
 #
 # rc(8) command script for managing virtual machines.
 #
@@ -966,8 +966,9 @@ vm_start() # $vm_count $host_vmdir $vm_names
 			vm_name="${vm_found##*/}"
 			echo
 			echo vm_start: Verifying if $vm_name is already loaded
-			[ -e /dev/vmm/$vm_name ] && \
-			{ echo $vm_found is already loaded. Skipping ; return 1 ;}
+                if [ -e /dev/vmm/$vm_name ]; then
+                        echo $vm_name is already loaded. Skipping
+                else
 			echo Starting $vm_name
 
 			echo
@@ -978,22 +979,22 @@ vm_start() # $vm_count $host_vmdir $vm_names
 	
 			case $vm_console in
 			nmdm)
-			/bin/sh /usr/local/etc/rc.d/vm run $vm_name &
+			/bin/sh /usr/local/etc/rc.d/vm onerun $vm_name &
 # Simply backgrounding the spawned vm in vm_boot - only okay if run at startup?
 			;;
 			tmux)
 			export TERM=xterm
-/usr/local/bin/tmux new -s $vm_name "/bin/sh /usr/local/etc/rc.d/vm run $vm_name"
+/usr/local/bin/tmux new -d -s $vm_name "/bin/sh /usr/local/etc/rc.d/vm onerun $vm_name"
 			;;
 			screen)
 			export TERM=xterm
-/usr/local/bin/screen -d -S $vm_name "/bin/sh /usr/local/etc/rc.d/vm run $vm_name"
+/usr/local/bin/screen -d -S $vm_name "/bin/sh /usr/local/etc/rc.d/vm onerun $vm_name"
 			;;
 			*) echo
 		echo You must set the $vm_name vm_console to "tmux" or "screen"
 				return 1	
 			esac
-
+		fi
 		done
 		;;
 	1) echo ; echo Starting $vm_names ; echo
