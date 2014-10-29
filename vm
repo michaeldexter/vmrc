@@ -1161,7 +1161,7 @@ vm_restart()
 		if [ ! -f $host_vmdir/$vm_name/${vm_name}.conf ]; then
 			echo $vm_name: no configuration file found: Skipping
 		else
-			echo Restarting $vm_names
+			echo Restarting $vm_name
 			/usr/sbin/bhyvectl --force-reset --vm=$vm_name
 # Perhaps wait for a result and try a more dramatic kill
 #			f_stop $vm_name
