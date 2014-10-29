@@ -964,8 +964,8 @@ vm_start() # $vm_count $host_vmdir $vm_names
 # Note from mkvm.sh.functions: if [ $( ls $1 | wc -l ) = 0 ]; then # None exist.
 			# vm_found will be full path and we must basename it
 			vm_name="${vm_found##*/}"
-			echo
-			echo vm_start: Verifying if $vm_name is already loaded
+#			echo
+#			echo vm_start: Verifying if $vm_name is already loaded
                 if [ -e /dev/vmm/$vm_name ]; then
                         echo $vm_name is already loaded. Skipping
                 else
@@ -991,7 +991,7 @@ vm_start() # $vm_count $host_vmdir $vm_names
 /usr/local/bin/screen -d -S $vm_name "/bin/sh /usr/local/etc/rc.d/vm onerun $vm_name"
 			;;
 			*) echo
-		echo You must set the $vm_name vm_console to "tmux" or "screen"
+			echo You must set the $vm_name vm_console to "tmux" or "screen"
 				return 1	
 			esac
 		fi
