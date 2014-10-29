@@ -19,7 +19,7 @@
 ############################################################ INFORMATION
 #
 # Title: virtual machine rc script
-# Version: v.0.8.1
+# Version: v.0.8.2
 #
 # rc(8) command script for managing virtual machines.
 #
@@ -411,18 +411,17 @@ f_boot () # $host_vmdir $found ($1) ($vm_name from the multi-argument loop)
 		esac
 
 	local console_flags="-s 5,lpc -l com1,stdio"
-#	local console_flags=""
-#	case $vm_console in
-#		nmdm)
-#			console_flags="-s 5,lpc -l com1,/dev/nmdm${vm_id}A"
-#			echo Verifying if nmdm.ko is loaded
-#			kldstat | grep -qw nmdm.ko || \
-#			{ echo nmdm.ko not loaded. Loading ; \
-#			kldload nmdm.ko ;} || \
-#			{ echo nmdm.ko failed to load. Skipping ; return 1 ;}
-#		;;
-#		*) console_flags="-s 5,lpc -l com1,stdio"
-#	esac
+	case $vm_console in
+		nmdm)
+			console_flags="-s 5,lpc -l com1,/dev/nmdm${vm_id}A"
+			echo Verifying if nmdm.ko is loaded
+			kldstat | grep -qw nmdm.ko || \
+			{ echo nmdm.ko not loaded. Loading ; \
+			kldload nmdm.ko ;} || \
+			{ echo nmdm.ko failed to load. Skipping ; return 1 ;}
+		;;
+		*) console_flags="-s 5,lpc -l com1,stdio"
+	esac
 
 	local iso_flags=""
 # NOTE that we are relying on $vm_cmd to be "iso" or "oneiso"
@@ -549,29 +548,30 @@ local bhyve_cmd="/usr/sbin/bhyve \
 	echo $timestamp $bhyve_cmd >> $host_vmdir/$1/${1}.log
 
 	case $vm_console in
-	stdio)
+	stdio) # Captive output
 		eval "$bhyve_cmd"
 		f_stop $1
 		f_mddestroy $1
 		;;
-#	nmdm)
-#		echo $bhyve_cmd > $host_vmdir/$1/${1}.log
-#
-#		echo
-#		echo Remember to stop $1 after shutdown
+	nmdm) # Run and multiplexed by spawned vm
 #		echo
 #		echo Booting $1 on console /dev/nmdm${vm_id}A
-#
+
+echo Press ENTER
+#		eval "$bhyve_cmd"
+		eval $bhyve_cmd > /dev/null 2>&1
+		bhyve_exit=$?
+
 # FIX: This is not reliable with multiple VMs
 #		( trap "f_stop $1" EXIT; eval "$bhyve_cmd" ) &
-#		eval $bhyve_cmd &
+#		eval "$bhyve_cmd" &
 #		eval $bhyve_cmd > /dev/null 2>&1 # Or direct to a logfile
-#		;;
-	tmux)
+		;;
+	tmux) # Run and multiplexed by spawned vm
 		eval "$bhyve_cmd"
 		bhyve_exit=$?
 		;;
-	screen)
+	screen) # Run and multiplexed by spawned vm
 		eval "$bhyve_cmd"
 		bhyve_exit=$?
 		;;
@@ -629,10 +629,15 @@ f_stop() # $host_vmdir $vm_name ($1)
 	stdio)
 		return 1
 		;;
-#	nmdm)
-## FIX: this does not result in a prompt. Requires <ENTER>. Not an easy fix.
-#		echo
-#		echo Terminating any $1 cu processes. Press ENTER
+	nmdm)
+# FIX: this does not result in a prompt. Requires <ENTER>. Not an easy fix.
+		echo
+		echo Terminating any $1 cu processes. Press ENTER
+		echo
+ps ax | grep nmdm${vm_id}B | awk '{print $1 }' | xargs kill > /dev/null 2>&1
+# FIX: This attempts to kill the grep process which will have terminated
+# no kill silent option? Let's redirect output
+# FIX: could this grep be cleaner? Separate out the PID?
 #	ps axopid,ucomm,command | awk -v ucomm=cu -v find=nmdm${vm_id}B '
 #		$1 == ucomm {
 #			pid = $1
@@ -641,8 +646,8 @@ f_stop() # $host_vmdir $vm_name ($1)
 #			sub("^[" FS "]*[^" FS "]+", "")
 #			if ( $0 ~ find ) print pid
 #			}' | xargs kill
-#		;;
-	tmux) # FIX: was tmux* Wildcard works?
+		;;
+	tmux)
 		/usr/local/bin/tmux list-sessions | grep -qw "$1 " || \
 			echo Session $1 is not running!
 		echo
@@ -683,13 +688,13 @@ echo Reading the $host_vmdir/$1/${1}.conf config file
 		echo
 		echo The VM console should be visible on stdio
 		;;
-#	nmdm)
-#		[ -e "/dev/nmdm${vm_id}B" ] || \
-#		{ echo nmdm device not found. Exiting ; exit 1 ; }
-#		echo
-#		echo Remember you can detach with \" \~ CTRL-d \"
-#		/usr/bin/cu -l "/dev/nmdm${vm_id}B" -s 9600
-#		;;
+	nmdm)
+		[ -e "/dev/nmdm${vm_id}B" ] || \
+		{ echo nmdm device not found. Exiting ; exit 1 ; }
+		echo
+		echo Remember you can detach with \" \~ CTRL-d \"
+		/usr/bin/cu -l "/dev/nmdm${vm_id}B" -s 9600
+		;;
 	tmux)
 # FIX: Check here if the session in fact exists?
 		echo
@@ -968,6 +973,10 @@ vm_start() # $vm_count $host_vmdir $vm_names
 			{ echo $host_vmdir/$vm_name/${vm_name}.conf failed to source. Skipping ; return 1 ; }
 	
 			case $vm_console in
+			nmdm)
+			/bin/sh /usr/local/etc/rc.d/vm run $vm_name &
+# Simply backgrounding the spawned vm in vm_boot - only okay if run at startup?
+			;;
 			tmux)
 			export TERM=xterm
 /usr/local/bin/tmux new -s $vm_name "/bin/sh /usr/local/etc/rc.d/vm run $vm_name"
@@ -997,6 +1006,21 @@ vm_start() # $vm_count $host_vmdir $vm_names
 		{ echo $host_vmdir/$vm_names/${vm_names}.conf failed to source. Skipping ; return 1 ; }
 
 		case $vm_console in
+			nmdm)
+echo
+echo Launching detached nmdm session for $vm_names
+echo
+echo You can attach with:
+echo
+echo service vm attach $vm_names
+echo or
+echo cu -l "/dev/nmdm${vm_id}B" -s 9600
+echo
+echo HINT: \~ CTRL-d to detach from it
+echo
+
+/bin/sh /usr/local/etc/rc.d/vm onerun $vm_names& > /dev/null 2>&1
+			;;
 			tmux)
 # Note that ps -ww is your friend when debugging tmux command execution
 
@@ -1010,9 +1034,10 @@ echo or
 echo tmux attach-session -t $vm_names
 echo
 echo HINT: Ctrl-b d to detach from it
+echo
 
 #export TERM=xterm
-/usr/local/bin/tmux new -d -s $vm_names "/bin/sh /usr/local/etc/rc.d/vm onerun $vm_names"
+/usr/local/bin/tmux new -d -s $vm_names "/bin/sh /usr/local/etc/rc.d/vm onerun $vm_names" > /dev/null 2>&1
 echo
 echo Verify that your session is listed:
 echo
@@ -1031,10 +1056,13 @@ echo or
 echo screen -d -r $vm_names
 echo
 echo HINT: C-a DD to detach from it
+echo
 
 #export TERM=xterm
 screen_cmd="/usr/local/bin/screen -d -m -S $vm_names -t $vm_names /bin/sh /usr/local/etc/rc.d/vm onerun $vm_names"
-eval $screen_cmd # The VM dies shortly after launch without this kludge
+eval $screen_cmd > /dev/null 2>&1
+# The VM dies shortly after launch without this kludge
+
 
 echo
 echo Verify that your session is listed:
@@ -1059,22 +1087,25 @@ vm_run() # $host_vmdir $vm_names ($1)
 # Spawned instance of "vm" within a tmux or screen session
 # vm_start has already verified if loaded
 
+# FIX: We may want to redirect this output else it shows up in surprising
+# places ... > /dev/null 2>&1
+
 # The vmrun.sh-sytle while loop
 while [ 1 ]; do
 
-	f_load $vm_names
+	f_load $vm_names > /dev/null 2>&1
 	bhyve_exit=$?
 	if [ $bhyve_exit -ne 0 ]; then
-		f_stop $vm_names
+		f_stop $vm_names > /dev/null 2>&1
 		break
 # f_load SKIPS IF LOADED! does vmrun.sh loop on LOAD or only bhyve?
 # f_boot too...
 	fi
 
-	f_boot $vm_names
+	f_boot $vm_names > /dev/null 2>&1
 	bhyve_exit=$?
 	if [ $bhyve_exit -ne 0 ]; then
-		f_stop $vm_names
+		f_stop $vm_names > /dev/null 2>&1
 		break
 	fi
 
@@ -1432,8 +1463,9 @@ iso_boot="" # Used by f_boot and vm_iso
 # .: cannot open /usr/local/vmrc/vm//vm7/vm7.confx: No such file or directory
 # FIX: First make sure the file is present, ideally syntax check *.conf
 
-echo
-echo Reading /usr/local/etc/vm.conf
+# Silencing these for backgrounded use
+#echo
+#echo Reading /usr/local/etc/vm.conf
 	[ -f /usr/local/etc/vm.conf ] && . /usr/local/etc/vm.conf
 	[ $host_vmdir ] || \
 	{ echo /usr/local/etc/vm.conf failed to source. Exiting ; exit 1 ; }

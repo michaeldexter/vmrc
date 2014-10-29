@@ -3,8 +3,7 @@ Known vmrc Issues
 1. Many GNU/Linux are configured for ISO boot but not hd0 boot. Know GNU/Linux?
 2. Templates prefixed with dyn_ need frequent updating. (i.e. snapshots)
 3. bhyveload has a 31 character VM name limit
-5. nmdm consoles are neither reliable nor predictable. Use tmux or screen.
-
+4. Must test multiple VM boot
 
 Known Feature Requests
 

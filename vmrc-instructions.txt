@@ -17,7 +17,7 @@
 ############################################################ INFORMATION
 #
 # Title: virtual machine rc script instructions
-# Version: v.0.8
+# Version: v.0.8.2
 #
 # vmrc usage instructions and developer notes
 #
@@ -27,6 +27,14 @@ Thank you for trying vmrc, the Virtual Machine rc script.
 
 Latest development snapshot: http://vmrc.bsd.lv/vmrc-snapshot.tar
 GitHub repository: https://github.com/michaeldexter/vmrc
+
+NOTABLE CHANGES from .0.8.1 to .0.8.2
+
+* Restored nmdm consoles
+
+NOTABLE CHANGES from .0.8 to .0.8.1
+
+* Fixed "iso" mode
 
 NOTABLE CHANGES from .0.7.1 to .0.8
 
@@ -345,7 +353,7 @@ Because bhyve console output is inherently captive, vmrc supports several
 stdio	Output the VM console to the console from which a VM is started
 tmux	Output the VM console to a detached tmux session
 screen	Output the VM console to a detached screen session
-nmdm	Use an "nmdm" serial console and cu(1) (currently disabled)
+nmdm	Use an "nmdm" serial console and cu(1)
 
 The included templates are set to "stdio" and must be set to "tmux" or "screen"
 to be used with the "start" directive.
@@ -358,13 +366,12 @@ To detach from each console, type:
 
 tmux: "CTRL-b d"
 screen: "C-a DD"
-nmdm: "~ CTRL-d" (currently disabled)
+nmdm: "~ CTRL-d"
 
 Notes:
 
 * There is a bug in FreeBSD 10.0R nmdm that would cause the VM to boot only
   upon first attachment.
-* nmdm consoles do not appear to be reliable with multiple VMs. Work needed.
 
 
 ### NETWORKING ###
