@@ -17,7 +17,7 @@
 ############################################################ INFORMATION
 #
 # Title: virtual machine rc script instructions
-# Version: v.0.8.2
+# Version: v.0.8.3
 #
 # vmrc usage instructions and developer notes
 #
@@ -27,6 +27,12 @@ Thank you for trying vmrc, the Virtual Machine rc script.
 
 Latest development snapshot: http://vmrc.bsd.lv/vmrc-snapshot.tar
 GitHub repository: https://github.com/michaeldexter/vmrc
+
+NOTABLE CHANGES from .0.8.2 to .0.8.3
+
+* Implemented ACPI reset and poweroff
+* Fixed echoed "cu" command
+* Returned "nmdm" to the templates
 
 NOTABLE CHANGES from .0.8.1 to .0.8.2
 

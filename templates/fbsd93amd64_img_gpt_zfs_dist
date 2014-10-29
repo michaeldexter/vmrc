@@ -19,7 +19,7 @@ vm_addtl_nics=""         # "1" through "7" (tap8<2 digit vm_id>[PCI unit 1-7]
 # VM runtime boot variables
 vm_cpus="1"              # Number of VM virtual CPUs (max 16) (required)
 vm_ram="1024"            # VM RAM Allocation in MB (required)
-vm_console="stdio"       # "stdio", "tmux" or "screen"
+vm_console="stdio"       # "stdio", "nmdm", "tmux" or "screen"
 virtio_type="ahci-hd"    # "ahci-hd" or "virtio-blk" (required)
 
 # OS-specific VM runtime boot variables
