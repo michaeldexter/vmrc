@@ -105,34 +105,34 @@ f_mddestroy() # $1 ($vm_name) Destroy multiple md(4) IDs of $vm_name
 
 f_hostprep() # Prepares the host environment
 {
-echo
-echo Verifying if the host CPU has EPT support
+#echo
+#echo Verifying if the host CPU has EPT support
 	grep -qw POPCNT /var/run/dmesg.boot || \
 	{ echo CPU does not feature EPT support. Exiting ; exit 1 ; }
 
-echo
-echo Verifying if vmm.ko is loaded and loading if necessary
+#echo
+#echo Verifying if vmm.ko is loaded and loading if necessary
 	kldstat | grep -qw vmm.ko || \
 	{ echo vmm.ko not loaded. Loading ; \
 	kldload vmm ; } || \
 	{ echo vmm.ko failed to load. Exiting ; exit 1 ; }
 
-echo
-echo Verifying if bridgestp.ko is loaded and loading if necessary
+#echo
+#echo Verifying if bridgestp.ko is loaded and loading if necessary
 	kldstat | grep -qw bridgestp.ko || \
 	{ echo bridgestp.ko not loaded. Loading ; \
 	kldload bridgestp ; } || \
 	{ echo bridgestp.ko failed to load. Skipping ; return 1 ; }
 
-echo
-echo Verifying if if_bridge.ko is loaded and loading if necessary
+#echo
+#echo Verifying if if_bridge.ko is loaded and loading if necessary
 	kldstat | grep -qw if_bridge.ko || \
 	{ echo if_bridge.ko not loaded. Loading ; \
 	kldload if_bridge ; } || \
 	{ echo if_bridge.ko failed to load. Skipping ; return 1 ; }
 
-echo
-echo Verifying if the host network bridge is up
+#echo
+#echo Verifying if the host network bridge is up
 if [ ! "$( ifconfig | grep bridge$host_bridge )" ]; then
 		echo Running ifconfig bridge$host_bridge create
 		ifconfig bridge$host_bridge create
@@ -141,15 +141,15 @@ if [ ! "$( ifconfig | grep bridge$host_bridge )" ]; then
 		ifconfig bridge$host_bridge addm $host_nic up
 fi
 
-echo
-echo Verifying if if_tap.ko is loaded and loading if necessary
+#echo
+#echo Verifying if if_tap.ko is loaded and loading if necessary
 	kldstat | grep -qw if_tap.ko || \
 	{ echo if_tap.ko not loaded. Loading ; \
 	kldload if_tap ; } || \
 	{ echo if_tap.ko failed to load. Skipping ; return 1 ; }
 
-echo
-echo Checking the net.link.tap.user_open sysctl
+#echo
+#echo Checking the net.link.tap.user_open sysctl
 if [ $(sysctl -n net.link.tap.up_on_open) = "0" ]; then
 	echo Setting net.link.tap.user_open sysctl to 1
 	sysctl net.link.tap.up_on_open=1
@@ -169,8 +169,8 @@ f_load() # $host_vmdir from vm.conf $vm_names ($1)
 #	{ echo $1 is already loaded. Skipping ; return 1 ; }
 
 # Avoid extra path slashes else grep will fail
-echo
-echo Verifying if $1 is already mounted on $host_vmdir$1/mnt
+#echo
+#echo Verifying if $1 is already mounted on $host_vmdir$1/mnt
 		mount | grep -qw $1/mnt && \
 		{ echo $1 is mounted. Skipping ; return 1 ; }
 
@@ -187,8 +187,8 @@ fi
 
 f_hostprep
 
-echo
-echo Reading the $host_vmdir/$1/${1}.conf config file
+#echo
+#echo Reading the $host_vmdir/$1/${1}.conf config file
 	[ -f $host_vmdir/$1/${1}.conf ] && . $host_vmdir/$1/${1}.conf
 	[ $vm_os_type ] || \
 	{ echo $host_vmdir/$1/${1}.conf failed to source. Exiting ; exit 1 ; }
@@ -223,46 +223,46 @@ if [ "$vm_os_type" = "freebsd" -a "$vm_dev_fs" = "ufs" ]; then
 
 		case $vm_dev_type in
 		img) # Note that we have run f_mddestroy
-			echo
-			echo Verifying if $vm_device exists
+#			echo
+#			echo Verifying if $vm_device exists
 			[ -f $vm_device ] || \
 			{ echo $vm_device is missing. Skipping ; return 1 ; }
-			echo
-			echo Detaching any previous memory device attachments
+#			echo
+#			echo Detaching any previous memory device attachments
 			f_mddestroy $1
-			echo
-			echo Attempting to attach $vm_device
+#			echo
+#			echo Attempting to attach $vm_device
 			dev_to_fsck=$( mdconfig -af $vm_device )
 			[ -e /dev/$dev_to_fsck ] ||
 		{ echo $vm_device did not attach. Skipping ; return 1 ; }
-			echo
-			echo Running fsck
+#			echo
+#			echo Running fsck
 			fsck_ufs -y /dev/$dev_to_fsck$vm_dev_root
-			echo
-			echo Detaching $vm_device
+#			echo
+#			echo Detaching $vm_device
 			f_mddestroy $1 #$vm_name
 		;;
 		zvol|device|malloc)
-			echo
-			echo Verifying that $vm_device exists
+#			echo
+#			echo Verifying that $vm_device exists
 			[ -e $vm_device ] || \
 			{ echo $vm_device is missing. Skipping ; return 1 ; }
-			echo
-			echo Running fsck
+#			echo
+#			echo Running fsck
 			fsck_ufs -y $vm_device$vm_dev_root
 	esac
 fi # End fsck check
 
 # Only checking for "freebsd", grub will be used otherwise
 
-echo
-echo Determining whether to use bhyveload or grub-bhyve
+#echo
+#echo Determining whether to use bhyveload or grub-bhyve
 if [ "$vm_os_type" = "freebsd" ]; then
 
 # $vm_device will be ~.iso if $vm_cmd is "iso" or "oneiso" - fine for FreeBSD
 
-	echo
-	echo Using bhyveload
+#	echo
+#	echo Using bhyveload
 	local bhyveload_cmd="/usr/sbin/bhyveload -m $vm_ram -d $vm_device $1"
 	echo
 	echo Running the bhyveload command:
@@ -277,29 +277,29 @@ if [ "$vm_os_type" = "freebsd" ]; then
 
 else # Use grub-bhyve
 
-	echo
-	echo Using grub-bhyve and checking if installed
+#	echo
+#	echo Using grub-bhyve and checking if installed
 		[ -x /usr/local/sbin/grub-bhyve ] || \
 { echo "grub-bhyve is missing \(ports/sysutils/grub2-bhyve\)" ; return 1 ; }
 
 # Note that we do not set the iso as $vm_device because grub will handle this
-	echo
-	echo Creating $host_vmdir/$1/device.map
+#	echo
+#	echo Creating $host_vmdir/$1/device.map
 	echo "(hd0) $host_vmdir/$1/${1}.img" > $host_vmdir/$1/device.map 
 
 # The ISO *should* be there but this check will avoid breakage
-	echo
-	echo Checking if we are in ISO boot mode
+#	echo
+#	echo Checking if we are in ISO boot mode
 	[ "$vm_cmd" = "iso" -o "$vm_cmd" = "oneiso" ] && echo Confirmed ;
 	echo "(cd0) $host_vmdir/$1/${1}.iso" >> $host_vmdir/$1/device.map
 
-	echo
-	echo Using the device.map:
+#	echo
+#	echo Using the device.map:
 	cat $host_vmdir/$1/device.map
 
 	if [ "$vm_cmd" = "iso" -o "$vm_cmd" = "oneiso" ]; then
-		echo
-		echo Generating the $1 grub.cfg # From the config file
+#		echo
+#		echo Generating the $1 grub.cfg # From the config file
 		echo -e $iso_grub_cfg > $host_vmdir/$1/grub.cfg || \
 			{ echo grub.cfg generation failed ; return 1 ; } 
 
@@ -307,8 +307,8 @@ else # Use grub-bhyve
 
 	else # Non-ISO boot
 
-		echo
-		echo Generating the $1 grub.cfg # From the config file
+#		echo
+#		echo Generating the $1 grub.cfg # From the config file
 		echo -e $img_grub_cfg > $host_vmdir/$1/grub.cfg || \
 			{ echo grub.cfg generation failed ; return 1 ; }
 
@@ -316,9 +316,9 @@ else # Use grub-bhyve
 
 	fi
 
-		echo
-		echo Using the grub.cfg:
-		cat $host_vmdir/$1/grub.cfg
+#		echo
+#		echo Using the grub.cfg:
+#		cat $host_vmdir/$1/grub.cfg
 
 	local timestamp=$( f_timestamp )
 	echo $timestamp $grub_load_cmd >> $host_vmdir/$1/${1}.log
@@ -360,8 +360,8 @@ f_boot () # $host_vmdir $found ($1) ($vm_name from the multi-argument loop)
 #	vm_id="${1#${1%[0-9]*}}" # vm2 -> 2
 	vm_id=${1##*[!0-9]}
 
-	echo
-	echo Reading the $host_vmdir/$1/${1}.conf config file
+#	echo
+#	echo Reading the $host_vmdir/$1/${1}.conf config file
 	[ -f $host_vmdir/$1/${1}.conf ] && . $host_vmdir/$1/${1}.conf
 	[ $vm_os_type ] || \
 { echo $host_vmdir/$1/${1}.conf failed to source. Skipping ; return 1 ; }
@@ -380,8 +380,8 @@ f_boot () # $host_vmdir $found ($1) ($vm_name from the multi-argument loop)
 
 		case $vm_dev_type in
 		device|malloc)
-	echo
-	echo Checking for $vm_device and prefixing with /dev
+#	echo
+#	echo Checking for $vm_device and prefixing with /dev
 	if [ -e /dev/$vm_device ]; then
 		 vm_device=/dev/$vm_device
 	else
@@ -389,8 +389,8 @@ f_boot () # $host_vmdir $found ($1) ($vm_name from the multi-argument loop)
 	fi
 		;;
 				img)
-	echo
-	echo Checking for $host_vmdir/$1/${1}.img and initializing vm_device
+#	echo
+#	echo Checking for $host_vmdir/$1/${1}.img and initializing vm_device
 	if [ -f $host_vmdir/$1/${1}.img ]; then
 		 vm_device=$host_vmdir/$1/${1}.img
 	else
@@ -398,8 +398,8 @@ f_boot () # $host_vmdir $found ($1) ($vm_name from the multi-argument loop)
 	fi
 				;;
 				zvol)
-	echo
-	echo Checking for /dev/zvol/${host_zpool}/$1 and initializing vm_device
+#	echo
+#	echo Checking for /dev/zvol/${host_zpool}/$1 and initializing vm_device
 	if [ -e /dev/zvol/${host_zpool}/$1 ]; then
 		vm_device=/dev/zvol/$host_zpool/$1
 	else
@@ -449,8 +449,8 @@ device_flags="$device_flags -s 6:${dev_count},${virtio_type},${device}"
 # WHY 8 you might ask? ifconfig can't take "tap020" so we use "tap8020".
 # 8 represents infinity... The middle digits represent the VM ID in the tap dev
 
-echo
-echo Starting VM Networking
+#echo
+#echo Starting VM Networking
 local tap_prefix=8 # Keep in sync with the local in f_stop
 local tap_base_id=$vm_id
 local tap_id="$(printf "%02i" "$tap_base_id")" # vm2 "2" -> 02 for tap8020
@@ -460,8 +460,8 @@ local tap_unit=0 #Additional vtnet PCI device and tap device suffix
 # Initialize the first VM NIC
 
 local nic_flags=""
-echo
-echo Verifying if tap$tap_prefix$tap_id$tap_unit already exists
+#echo
+#echo Verifying if tap$tap_prefix$tap_id$tap_unit already exists
 if [ ! "$( ifconfig | grep tap$tap_prefix$tap_id$tap_unit )" ]; then
 	echo
 	echo Running ifconfig tap$tap_prefix$tap_id$tap_unit create
@@ -471,8 +471,8 @@ if [ ! "$( ifconfig | grep tap$tap_prefix$tap_id$tap_unit )" ]; then
 fi
 nic_flags="-s 3:${tap_unit},virtio-net,tap$tap_prefix$tap_id$tap_unit"
 
-echo
-echo Running ifconfig bridge$host_bridge addm tap$tap_prefix$tap_id$tap_unit up
+#echo
+#echo Running ifconfig bridge$host_bridge addm tap$tap_prefix$tap_id$tap_unit up
 
 echo ifconfig bridge$host_bridge addm tap$tap_prefix$tap_id$tap_unit up >> \
 	$host_vmdir/$1/ifconfig_cmd.sh
@@ -487,16 +487,16 @@ ifconfig bridge$host_bridge addm tap$tap_prefix$tap_id$tap_unit up
 
 nic_flags="$nic_flags -s 3:${tap_unit},virtio-net,tap$tap_prefix$tap_id$tap_unit"
 # Informational info or echo commands are not working here because of the loop?
-echo
-echo Running ifconfig tap$tap_prefix$tap_id$tap_unit create
+#echo
+#echo Running ifconfig tap$tap_prefix$tap_id$tap_unit create
 		echo ifconfig tap$tap_prefix$tap_id$tap_unit create >> \
 				$host_vmdir/$1/ifconfig_cmd.sh
 		ifconfig tap$tap_prefix$tap_id$tap_unit create
 #echo
 #echo Running ifconfig tap$tap_prefix$tap_id$tap_unit up
 #		ifconfig tap$tap_prefix$tap_id$tap_unit up 
-echo
-echo Running ifconfig bridge$host_bridge addm tap$tap_prefix$tap_id$tap_unit up
+#echo
+#echo Running ifconfig bridge$host_bridge addm tap$tap_prefix$tap_id$tap_unit up
 echo ifconfig bridge$host_bridge addm tap$tap_prefix$tap_id$tap_unit up >> \
 	$host_vmdir/$1/ifconfig_cmd.sh
 ifconfig bridge$host_bridge addm tap$tap_prefix$tap_id$tap_unit up
@@ -505,8 +505,8 @@ ifconfig bridge$host_bridge addm tap$tap_prefix$tap_id$tap_unit up
 
 # Experimental and dangerous considering that a we are root:
 # Run a preflight script to set up devices, bridges etc.
-	echo
-	echo Checking for preflight script $host_vmdir/$1/preflight_cmd.sh
+#	echo
+#	echo Checking for preflight script $host_vmdir/$1/preflight_cmd.sh
 	if [ -f $host_vmdir/$1/preflight_cmd.sh ]; then
 		echo Running $host_vmdir/$1/preflight_cmd.sh script
 		sh $host_vmdir/$1/preflight_cmd.sh
@@ -557,7 +557,7 @@ local bhyve_cmd="/usr/sbin/bhyve \
 #		echo
 #		echo Booting $1 on console /dev/nmdm${vm_id}A
 
-echo Press ENTER
+#echo Press ENTER
 #		eval "$bhyve_cmd"
 		eval $bhyve_cmd > /dev/null 2>&1
 		bhyve_exit=$?
@@ -605,12 +605,12 @@ echo that reported $?
 echo sleeping 5 while testing
 sleep 5
 
-	echo
-	echo Destroying $1 with bhyvectl
+#	echo
+#	echo Destroying $1 with bhyvectl
 	/usr/sbin/bhyvectl --destroy --vm=$1 > /dev/null 2>&1
 
-	echo
-	echo Destroying tap network devices
+#	echo
+#	echo Destroying tap network devices
 	# It appears they are removed from the bridge upon destruction
 		local tap_prefix=8 # Keep in sync with the local in f_boot
 		local tap_count=0
@@ -618,7 +618,7 @@ sleep 5
 		tap_base_id="$( printf "%02i" $vm_id)"
 
 		while [ $tap_count -lt 9 ]; do
-		echo Checking for tap$tap_prefix${tap_base_id}$tap_count
+#		echo Checking for tap$tap_prefix${tap_base_id}$tap_count
 		ifconfig | grep -qw tap$tap_prefix${tap_base_id}$tap_count && \
 		{ echo Destroying tap$tap_prefix${tap_base_id}$tap_count ; \
 		ifconfig tap$tap_prefix${tap_base_id}$tap_count destroy ; }
@@ -636,7 +636,7 @@ sleep 5
 	nmdm)
 # FIX: this does not result in a prompt. Requires <ENTER>. Not an easy fix.
 		echo
-		echo Terminating any $1 cu processes. Press ENTER
+		echo Terminating any $1 cu processes. # Press ENTER
 		echo
 ps ax | grep nmdm${vm_id}B | awk '{print $1 }' | xargs kill > /dev/null 2>&1
 # FIX: This attempts to kill the grep process which will have terminated
@@ -654,13 +654,13 @@ ps ax | grep nmdm${vm_id}B | awk '{print $1 }' | xargs kill > /dev/null 2>&1
 	tmux)
 		/usr/local/bin/tmux list-sessions | grep -qw "$1 " || \
 			echo Session $1 is not running!
-		echo
-		echo Terminating the $1 tmux session
+#		echo
+#		echo Terminating the $1 tmux session
 		/usr/local/bin/tmux kill-session -t $1
 		;;
 	screen)
-		echo
-		echo Terminating the $1 screen session
+#		echo
+#		echo Terminating the $1 screen session
 		/usr/local/bin/screen -X -S $1 quit
 		/usr/local/bin/screen -wipe
 		;;
@@ -676,13 +676,13 @@ f_attach() # $host_vmdir $vm_name ($1)
 #	vm_id="${1#${1%[0-9]*}}"
 	vm_id=${1##*[!0-9]}
 
-echo
-echo Verifying if $1 is loaded
+#echo
+#echo Verifying if $1 is loaded
 	[ -e /dev/vmm/$1 ] || \
 	{ echo $1 is not loaded. Exiting ; exit 1 ;}
 
-echo
-echo Reading the $host_vmdir/$1/${1}.conf config file
+#echo
+#echo Reading the $host_vmdir/$1/${1}.conf config file
 	[ -f $host_vmdir/$1/${1}.conf ] && . $host_vmdir/$1/${1}.conf
 	[ $vm_os_type ] || \
 { echo $host_vmdir/$1/${1}.conf failed to source. Skipping ; return 1 ; }
@@ -722,34 +722,34 @@ f_grub() # $vm_names ($1)
 {
 [ $1 ] || { echo f_grub Invalid input. Skipping ; return 1 ; }
 
-		echo
-		echo Using grub-bhyve and checking if installed
+#		echo
+#		echo Using grub-bhyve and checking if installed
 		[ -x /usr/local/sbin/grub-bhyve ] || \
 { echo "grub-bhyve missing \(ports/sysutils/grub2-bhyve\)" ; return 1 ; }
 
-	echo
-	echo Verifying if vmm.ko is loaded and loading if necessary
+#	echo
+#	echo Verifying if vmm.ko is loaded and loading if necessary
 		kldstat | grep -qw vmm.ko || \
 		{ echo vmm.ko not loaded. Loading ; \
 		kldload vmm ; } || \
 		{ echo vmm.ko failed to load. Exiting ; exit 1 ; }
 
-	echo
-	echo Verifying if $1 is already loaded
+#	echo
+#	echo Verifying if $1 is already loaded
 		[ -e /dev/vmm/$1 ] && \
 { echo Destroying $1 ; /usr/sbin/bhyvectl --destroy --vm=$1 > /dev/null 2>&1 ;}
 
-	echo
-	echo Reading the $host_vmdir/$1/${1}.conf config file
+#	echo
+#	echo Reading the $host_vmdir/$1/${1}.conf config file
 		[ -f $host_vmdir/$1/${1}.conf ] && . $host_vmdir/$1/${1}.conf
 		[ $vm_os_type ] || \
 { echo $host_vmdir/$1/${1}.conf failed to source. Skipping ; return 1 ; }
 
 case $vm_dev_type in # device and malloc are already set
-		device) echo prefixing $vm_device from the VM config file with /dev
+		device) # echo prefixing $vm_device from the VM config file with /dev
 				$vm_device=$vm_device/dev
 				;;
-		malloc) echo prefixing $vm_device from the VM config file with /dev
+		malloc) # echo prefixing $vm_device from the VM config file with /dev
 				$vm_device=$vm_device/dev
 				;;
 		img) vm_device=$host_vmdir/$1/${1}.img ;;
@@ -757,23 +757,23 @@ case $vm_dev_type in # device and malloc are already set
 		*) echo vm_dev_type was not set. Exiting ; exit 1
 esac
 
-	echo
-	echo Creating $host_vmdir/$1/device.map
+#	echo
+#	echo Creating $host_vmdir/$1/device.map
 		echo "(hd0) $vm_device" > $host_vmdir/$1/device.map || \
 	{ echo device.map generation failed ; return 1 ; }
 	[ -f $host_vmdir/$1/${1}.iso ] &&
 	{ echo "(cd0) $host_vmdir/$1/${1}.iso" >> $host_vmdir/$1/device.map ; }
 
-	echo
-	echo Using the device.map:
-		cat $host_vmdir/$1/device.map
+#	echo
+#	echo Using the device.map:
+#	cat $host_vmdir/$1/device.map
 
 # Note that we are specifically not using the grub.cfg
 
-	echo
+#	echo
 #	echo Creating an empty $host_vmdir/$1/grub.cfg
 #	echo "" > $host_vmdir/$1/grub.cfg
-	echo Removing $host_vmdir/$1/grub.cfg
+#	echo Removing $host_vmdir/$1/grub.cfg
 	rm $host_vmdir/$1/grub.cfg
 #	touch $host_vmdir/$1/grub.cfg
 
@@ -781,10 +781,10 @@ esac
 
 grub_cmd="/usr/local/sbin/grub-bhyve -m $host_vmdir/$1/device.map -M $vm_ram $1"
 
-		echo $timestamp $grub_cmd >> $host_vmdir/$1/${1}.log
+	echo $timestamp $grub_cmd >> $host_vmdir/$1/${1}.log
 
-		echo
-		echo Running the grub-bhyve command:
+	echo
+	echo Running the grub-bhyve command:
 	echo $grub_cmd
 	echo
 	echo $grub_cmd > $host_vmdir/$1/grub_cmd.sh
@@ -802,43 +802,43 @@ f_mount() # $vm_names ($1) (a single FreeBSD VM)
 {
 [ $1 ] || { echo f_mount Invalid input. Skipping ; return 1 ; }
 
-echo
-echo Reading the $host_vmdir/$1/${1}.conf config file
-		[ -f $host_vmdir/$1/${1}.conf ] && . $host_vmdir/$1/${1}.conf
-		[ $vm_os_type ] || \
+#echo
+#echo Reading the $host_vmdir/$1/${1}.conf config file
+	[ -f $host_vmdir/$1/${1}.conf ] && . $host_vmdir/$1/${1}.conf
+	[ $vm_os_type ] || \
 { echo $host_vmdir/$1/${1}.conf failed to source. Skipping ; return 1 ; }
 
 	[ "$vm_os_type" = "freebsd" ] || \
 	{ echo Only supported by FreeBSD VMs. Exiting ; exit 1 ; }
 
-echo
-echo Verifying if VM is already loaded
+#echo
+#echo Verifying if VM is already loaded
 	[ -e /dev/vmm/$1 ] && { echo $1 already loaded. Exiting ; exit 1 ; }
 
-echo
-echo Verifying if VM is already mounted on its mount point
-		( mount | grep -qw $1/mnt ) && \
-		{ echo $1 is mounted. Exiting ; exit 1 ; }
+#echo
+#echo Verifying if VM is already mounted on its mount point
+	( mount | grep -qw $1/mnt ) && \
+	{ echo $1 is mounted. Exiting ; exit 1 ; }
 
 # FIX: umount first? force? (see previous logic)
 # FIX: medestroy it first?
 
 case $vm_dev_type in # device and malloc are already set
-		device) echo prefixing $vm_device from the VM config file with /dev
-				$vm_device=$vm_device/dev
-				;;
-		malloc) echo prefixing $vm_device from the VM config file with /dev
-				$vm_device=$vm_device/dev
-				;;
-		img) vm_device=$host_vmdir/$1/${1}.img ;;
-		zvol) vm_device=/dev/zvol/${host_zpool}/$1 ;;
-		*) echo vm_dev_type was not set. Exiting ; exit 1
+	device) #echo prefixing $vm_device from the VM config file with /dev
+			$vm_device=$vm_device/dev
+			;;
+	malloc) #echo prefixing $vm_device from the VM config file with /dev
+			$vm_device=$vm_device/dev
+			;;
+	img) vm_device=$host_vmdir/$1/${1}.img ;;
+	zvol) vm_device=/dev/zvol/${host_zpool}/$1 ;;
+	*) echo vm_dev_type was not set. Exiting ; exit 1
 esac
 
-echo
-echo Checking for $host_vmdir/$1/mnt and creating if necessary
+#echo
+#echo Checking for $host_vmdir/$1/mnt and creating if necessary
 		if [ ! -d "$host_vmdir/$1/mnt" ]; then
-						echo Creating $host_vmdir/$1/mnt
+#				echo Creating $host_vmdir/$1/mnt
 				mkdir -p $host_vmdir/$1/mnt || \
 		{ echo $1/mnt could not be created. Exiting ; exit 1 ; }
 		fi
@@ -848,18 +848,18 @@ echo Checking for $host_vmdir/$1/mnt and creating if necessary
 			img)
 			[ -e $vm_device ] || \
 			{ echo $vm_device is missing. Skipping ; return 1 ; }
-			echo 
-			echo Detaching any previous memory device attachments
+#			echo 
+#			echo Detaching any previous memory device attachments
 			f_mddestroy $1
-			echo Attempting to attach $vm_device
+#			echo Attempting to attach $vm_device
 			dev_to_fsck=$( mdconfig -af $vm_device )
 			[ -c /dev/$dev_to_fsck ] ||
 		{ echo $vm_device did not attach. Skipping ; return 1 ; }
 
-			echo Running fsck
+#			echo Running fsck
 			fsck_ufs -y $dev_to_fsck$vm_dev_root
 
-			echo Running mount
+#			echo Running mount
 			mount /dev/$dev_to_fsck$vm_dev_root $host_vmdir/$1/mnt
 			if [ ! $( mount | grep -qw $1/mnt ) ]; then
 # FIX: this test seems inverted - fixed by space after mnt ? )
@@ -869,14 +869,14 @@ echo Checking for $host_vmdir/$1/mnt and creating if necessary
 			fi
 				;;
 				zvol|device|malloc)
-					echo
-					echo Verifying that $vm_device exists
+#					echo
+#					echo Verifying that $vm_device exists
 					[ -e $vm_device ] || \
 					{ echo $vm_device is missing. Skipping ; return 1 ; }
-					echo Running fsck
+#					echo Running fsck
 					fsck_ufs -y $vm_device$vm_dev_root
 
-			echo Running mount
+#			echo Running mount
 				mount $vm_device$vm_dev_root $host_vmdir/$1/mnt
 				if [ ! $( mount | grep -qw $1/mnt) ]; then
 # FIX: Is this test working inverted?
@@ -896,30 +896,30 @@ else
 	echo vm_dev_fs is not properly initialized in the configuration file
 fi
 
-echo
-echo Verifying if VM mounted on its mount point
+#echo
+#echo Verifying if VM mounted on its mount point
 		( mount | grep -qw $1/mnt ) || \
 		{ echo $1 did not mount. Exiting ; exit 1 ; }
 echo
-echo $1 appears to have mounted
+echo $1 appears to have mounted on $1/mnt
 } # end f_mount
 
 f_umount() # $vm_names ($1)
 {
 [ $1 ] || { echo f_umount Invalid input. Skipping ; return 1 ; }
 
-echo
-echo Verifying if $1 is loaded
+#echo
+#echo Verifying if $1 is loaded
 	[ -e /dev/vmm/$1 ] && \
 	{ echo $1 is loaded. Exiting ; exit 1 ; }
 
-echo
-echo Verifying if $1 is already mounted on $host_vmdir$1/mnt
+#echo
+#echo Verifying if $1 is already mounted on $host_vmdir$1/mnt
 	mount | grep -qw $1/mnt || \
 	{ f_mddestroy $1 ; echo $1 is not mounted. Exiting ; exit 1 ; }
 
-echo
-echo Unmounting $host_vmdir/$1/mnt/dev in case it was jailed
+#echo
+#echo Unmounting $host_vmdir/$1/mnt/dev in case it was jailed
 	umount -f $host_vmdir/$1/mnt/dev
 
 [ -f $host_vmdir/$vm_names/${vm_names}.conf ] && \
@@ -929,19 +929,19 @@ echo Unmounting $host_vmdir/$1/mnt/dev in case it was jailed
 
 case $vm_dev_fs in
 	ufs)
-		echo
-		echo Unmounting $host_vmdir/$1/mnt/
+#		echo
+#		echo Unmounting $host_vmdir/$1/mnt/
 		umount -f $host_vmdir/$1/mnt/
 	;;
 	zfs)
-		echo
-		echo Exporting ${1}pool
+#		echo
+#		echo Exporting ${1}pool
 		zpool export ${1}pool
 esac
 
 	if [ "$vm_dev_type" = "img" ]; then
-		echo
-		echo Detaching memory device
+#		echo
+#		echo Detaching memory device
 		f_mddestroy $1
 	fi
 mount | grep -qw $1/mnt || \
@@ -971,8 +971,8 @@ vm_start() # $vm_count $host_vmdir $vm_names
                 else
 			echo Starting $vm_name
 
-			echo
-			echo Reading the $host_vmdir/$vm_name/${vm_name}.conf config file
+#			echo
+#			echo Reading the $host_vmdir/$vm_name/${vm_name}.conf config file
 			[ -f $host_vmdir/$vm_name/${vm_name}.conf ] && . $host_vmdir/$vm_name/${vm_name}.conf
 			[ $vm_os_type ] || \
 			{ echo $host_vmdir/$vm_name/${vm_name}.conf failed to source. Skipping ; return 1 ; }
@@ -1004,8 +1004,8 @@ vm_start() # $vm_count $host_vmdir $vm_names
 			[ -e /dev/vmm/$vm_names ] && \
 		{ echo $vm_names is already loaded. Skipping ; return 1 ;}
 
-		echo
-		echo Reading the $host_vmdir/$vm_names/${vm_names}.conf config file
+#		echo
+#		echo Reading the $host_vmdir/$vm_names/${vm_names}.conf config file
 		[ -f $host_vmdir/$vm_names/${vm_names}.conf ] && . $host_vmdir/$vm_names/${vm_names}.conf
 		[ $vm_os_type ] || \
 		{ echo $host_vmdir/$vm_names/${vm_names}.conf failed to source. Skipping ; return 1 ; }
@@ -1070,11 +1070,11 @@ eval $screen_cmd > /dev/null 2>&1
 # The VM dies shortly after launch without this kludge
 
 
-echo
-echo Verify that your session is listed:
-echo
-/usr/local/bin/screen -list | grep -o $vm_names
-echo
+#echo
+#echo Verify that your session is listed:
+#echo
+#/usr/local/bin/screen -list | grep -o $vm_names
+#echo
 			;;
 			*) echo
 		echo You must set the $vm_name vm_console to "tmux" or "screen"
@@ -1351,8 +1351,8 @@ vm_jail() # $vm_names ($1)
 		1) echo ; echo Booting VM $vm_names as a jail
 				f_mount $vm_names
 		ls $host_vmdir/$vm_names/mnt
-	echo
-	echo Reading the $host_vmdir/$vm_names/${vm_names}.conf config file
+#	echo
+#	echo Reading the $host_vmdir/$vm_names/${vm_names}.conf config file
 		[ -f $host_vmdir/$vm_names/${vm_names}.conf ] && . $host_vmdir/$vm_names/${vm_names}.conf
 		[ $vm_os_type ] || \
 		{ echo $host_vmdir/$vm_names/${vm_names}.conf failed to source. Exiting ; exit 1 ; }
@@ -1402,8 +1402,8 @@ vm_qemu() # $vm_names ($1)
 		mount | grep -qw $vm_names/mnt && \
 		{ echo $vm_names is mounted. Skipping ; return 1 ; }
 
-	echo
-		echo Reading the $host_vmdir/$vm_names/${vm_names}.conf config file
+#	echo
+#		echo Reading the $host_vmdir/$vm_names/${vm_names}.conf config file
 		[ -f $host_vmdir/$vm_names/${vm_names}.conf ] && . $host_vmdir/$vm_names/${vm_names}.conf
 		[ $vm_os_type ] || \
 	{ echo $host_vmdir/$vm_names/${vm_names}.conf failed to source. Exiting ; exit 1 ; }
