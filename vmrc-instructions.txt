@@ -17,7 +17,7 @@
 ############################################################ INFORMATION
 #
 # Title: virtual machine rc script instructions
-# Version: v.0.8.6
+# Version: v.0.8.7
 #
 # vmrc usage instructions and developer notes
 #
@@ -27,6 +27,13 @@ Thank you for trying vmrc, the Virtual Machine rc script.
 
 Latest development snapshot: http://vmrc.bsd.lv/vmrc-snapshot.tar
 GitHub repository: https://github.com/michaeldexter/vmrc
+
+NOTABLE CHANGES	from .0.8.6 to .0.8.7
+
+* MeetBSD/DevSummit Input. Lots
+* Redirectable info and error output to stdio, logger or nowhere
+* Download payload tasting for compression
+* See the GitHub visual diffs
 
 .0.8.6: Added ACPI shutdown
 .0.8.5: Enabled OpenBSD reboot. Updated flashrd version

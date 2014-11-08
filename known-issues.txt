@@ -3,7 +3,9 @@ Known vmrc Issues
 1. Many GNU/Linux are configured for ISO boot but not hd0 boot. Know GNU/Linux?
 2. Templates prefixed with dyn_ need frequent updating. (i.e. snapshots)
 3. bhyveload has a 31 character VM name limit
-4. Must test multiple VM boot
+4. FreeBSD creates superflous tap0 devices and runs dhcp on them
+5. Templates using "Latest" rawimg images will not update - check timestamps?
+6. cu processes on idle nmdm devices can go nuts
 
 Known Feature Requests
 
