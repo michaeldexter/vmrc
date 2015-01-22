@@ -19,7 +19,7 @@
 ############################################################ INFORMATION
 #
 # Title: make VM script
-# Version: v.0.7.1
+# Version: v.0.8.7
 #
 # Script to provision FreeBSD Virtual Machines for use with vmrc
 #
@@ -35,21 +35,21 @@ vm_mountpoint="" # Initialize to be safe
 
 echo
 echo Reading the /usr/local/etc/vm.conf config file
-		. /usr/local/etc/vm.conf || \
-		echo vm.conf config file failed to source. Exiting # ; exit 1
+	. /usr/local/etc/vm.conf || \
+	echo vm.conf config file failed to source. Exiting # ; exit 1
 
 echo
 echo Reading ./mkvm.sh.functions
-		. ./mkvm.sh.functions || \
-		echo ./mkvm.sh.functions failed to source. Exiting # ; exit 1
+	. ./mkvm.sh.functions || \
+	echo ./mkvm.sh.functions failed to source. Exiting # ; exit 1
 
 ### STEP ONE : template to config file conversion and customization ###
 
 echo
 echo Verifying that $host_vmdir exists and generating a new VM ID
 if [ ! $host_vmdir ]; then
-		echo The VM directory was not sourced from /usr/local/etc/vm.conf
-		exit
+	echo The VM directory was not sourced from /usr/local/etc/vm.conf
+	exit
 else
 	echo
 	echo Generating a new VM ID number
@@ -57,7 +57,7 @@ else
 	echo The resulting VM ID is $vm_id
 fi
 
-if [ $# -gt 0 ]; then # Non-interactive mode
+if [ "$#" -gt 0 ]; then # Non-interactive mode
 	echo -------------------------------------------------------------
 	echo -------------- Running in non-interactive mode --------------
 	echo -------------------------------------------------------------
@@ -88,9 +88,8 @@ else # Interactive mode
 		echo No template entered.
 		echo 
 	elif [ ! -f $host_templates/$template ]; then
-			echo Template $host_templates/$template \
-does not exist.
-			echo
+		echo Template $host_templates/$template does not exist.
+		echo
 	else
 		break
 	fi
@@ -113,12 +112,12 @@ does not exist.
 fi
 
 	echo
-		echo The resulting VM will be named $vm_name
+	echo The resulting VM will be named $vm_name
 
-if [ ! -f ${host_templates}/$template ]; then
-	   	echo Template $host_templates/$template does not exist.
+	if [ ! -f ${host_templates}/$template ]; then
+   		echo Template $host_templates/$template does not exist.
 		exit 1
-fi
+	fi
 
 echo
 echo Verifying if the VM already exists and making
@@ -222,150 +221,212 @@ fi # end install_method=rawimg test
 
 ### STEP THREE : Fetch raw image, ISO or distribution sets ###
 
-# SIMPLIFICATION
-# we know the payload name and could parse its ending for img|iso & xz|gz|other
-# we could also parse a full url to a file but that would make for long config
-# file entries and the parsing would have to be air-tight
-# With that, we just case/if it for the known endings (though, may not be compressed)
-# Do not expand the dist sets...
 # Bother with the 8.4 dist set layout?
-# pv?
-
+# pv? dpv?
+# Maybe fetch size check against the ondisk one to make sure it is correct
+# Note FreeBSD timestamp files
 
 echo
 echo Fetching install media if not present in $host_distdir
 
-# This blindly fetches everything in $site_payload, reagardless of install type
 for distset in $site_payload; do
 	if [ -f $host_distdir/$site_path$distset ]; then # File is present
 		echo
 		echo $host_distdir$site_path$distset already exists locally
+		fetchexit="0"
 	else
-		mkdir -p $host_distdir$site_path		 # Harmless if present
+		mkdir -p $host_distdir$site_path # Harmless if present
 		echo
 		echo $host_distdir$site_path$distset is missing. Fetching
+
 # Consider fetch -m mirror mode which verifies payload size BUT would not
-# allow for offline use
-		fetch -m $install_site$site_path$distset -o \
-		$host_distdir/$site_path/
-			if [ ! -f $host_distdir/$site_path$distset ]; then
-				echo Distribution set did not fetch. Exiting
-				exit 1
-			fi
+# allow for offline use. gjb says there may be a timestamp check
+
+		fetch --no-verify-peer -m $install_site$site_path$distset -o \
+			$host_distdir/$site_path/
+			fetchexit=$?
+
+		if [ "$fetchexit" -gt 0 ]; then
+			echo Distribution set did not fetch. Deleting
+			rm $host_distdir/$site_path$distset
+			echo Exiting
+			exit 1
+		fi
 	fi
 done
 
+if [ "$fetchexit" -gt 0 ]; then # Make sure fetchexit is initialized
+	echo Distribution set did not fetch. Deleting VM
+	rm -rf $host_vmdir/$vm_name/$vm_name
+	echo Exiting
+	exit 1
+fi
+
 echo
 echo Expanding or copying the payload as necessary
-case $install_method in # Note that gunzip will take .xz, .gz, .bz2, .Z!
-# CHECK IF EITHER IS COMPRESSED FIRST!!! MOST ISO'S ARE NOT!
+
 # Note that gunzip will ignore endings that it does not recognize
-	rawimg)
-		case $payload_compressed in
-		yes) echo ; echo Extracting $site_payload to ${vm_name}.img
-		gunzip -c $host_distdir/$site_path/$site_payload > \
-			$host_vmdir/$vm_name/${vm_name}.img	
-		;;
-		"") echo ; echo Copying $site_payload to ${vm_name}.img
-		cp $host_distdir/$site_path/$site_payload \
-			$host_vmdir/$vm_name/${vm_name}.img
-		esac
+# libarchive should do this but not the tar front end
+# Consider fetch size check over a given size to distinguish
+# text file answers, errors, redirects...
+# Eodes fetch handle redirect output? ( earlier download above )
 
-		if [ ! -f $host_vmdir/$vm_name/${vm_name}.img ]; then
-			echo
-			echo ${vm_name}.img Failed to extract or copy. Exiting
-			exit 1
+if [ "$install_method" = "isoimg" -o "$install_method" = "rawimg" ]; then
+
+filetype=$( f_filetype $host_distdir/$site_path/$site_payload )
+echo Download appears to be type $filetype
+
+case $filetype in
+	.bz2) echo Handling bz2
+		if [ ! -f $host_distdir/$site_path/$site_payload.unc ]; then
+			gunzip -c -k $host_distdir/$site_path/$site_payload > \
+			$host_distdir/$site_path/$site_payload.unc ||
+				{ echo Image extraction failed. Exiting ; \
+			rm -rf $host_vmdir/$vm_name/$vm_name ; exit 1 ; }
 		fi
+	;;
+	.Z) echo Handling Z
+		if [ ! -f $host_distdir/$site_path/$site_payload.unc ]; then
+			gunzip -c -k $host_distdir/$site_path/$site_payload > \
+			$host_distdir/$site_path/$site_payload.unc ||
+				{ echo Extraction failed. Exiting ; \
+			rm -rf $host_vmdir/$vm_name/$vm_name ; exit 1 ; }
+		fi
+	;;
+	.gz) echo Handling gz
+		if [ ! -f $host_distdir/$site_path/$site_payload.unc ]; then
+			gunzip -c -k $host_distdir/$site_path/$site_payload > \
+			$host_distdir/$site_path/$site_payload.unc ||
+				{ echo Extraction failed. Exiting ; \
+			rm -rf $host_vmdir/$vm_name/$vm_name ; exit 1 ; }
+		fi
+	;;
+	.xz) echo Handling xz
+		if [ ! -f $host_distdir/$site_path/$site_payload.unc ]; then
+			unxz -c -k $host_distdir/$site_path/$site_payload > \
+			$host_distdir/$site_path/$site_payload.unc ||
+				{ echo Extraction failed. Exiting ; \
+			rm -rf $host_vmdir/$vm_name/$vm_name ; exit 1 ; }
+		fi
+	;;
+	.zip) echo Handling zip
+		if [ ! -f $host_distdir/$site_path/$site_payload.unc ]; then
+			gunzip -c -k $host_distdir/$site_path/$site_payload > \
+			$host_distdir/$site_path/$site_payload.unc ||
+				{ echo Extraction failed. Exiting ; \
+			rm -rf $host_vmdir/$vm_name/$vm_name ; exit 1 ; }
+		fi
+	;;
+	*) echo Image does not appear to be compressed
+esac
 
-		echo
-		echo Checking if a tty change is requested
-		if [ "$requires_tty" = "yes" ]; then
-			echo
-			echo Attaching ${vm_name}.img for tty change
-			vm_mountpoint=$host_vmdir/$vm_name/mnt/
-			vm_device=$( mdconfig -af $host_vmdir/$vm_name/${vm_name}.img ) ||
-				{ echo ${vm_name}.img failed to attach. Exiting ; exit 1 ; }
-			echo
-			echo Running fsck on $vm_device$vm_dev_root
-			fsck_ufs -y $vm_device$vm_dev_root
+case $install_method in
+	isoimg)
+		imagecommand="ln -sf"
+		ending=.iso
+	;;
+	rawimg)
+		imagecommand="cp"
+		ending=.img
+esac
 
-			echo
-			echo Mounting $vm_device$vm_dev_root on $vm_mountpoint
-			mount /dev/$vm_device$vm_dev_root $vm_mountpoint
+eval $imagecommand $host_distdir/$site_path/$site_payload \
+$host_vmdir/$vm_name/$vm_name$ending ||
+	{ echo Image failed to copy or link. Exiting ; \
+		rm -rf $host_vmdir/$vm_name/$vm_name ; exit 1 ; }
 
-			echo
-			echo Verifying that VM mounted on its mount point
-			( mount | grep -qw $vm_name/mnt ) || \
-			{ echo $1 did not mount. Exiting ; exit 1 ; }
+# Consider text/html; charset=us-ascii for redirects and errors
+# We could check return values but will check for the desired result
+
+if [ ! -f $host_vmdir/$vm_name/$vm_name$ending ]; then
+	echo
+	echo $vm_name$ending Failed to extract or copy. Exiting
+	exit 1
+fi
+
+
+if [ "$install_method" = "rawimg" ]; then # Could also check if FreeBSD
+# This may apply to other OS's at some point
+echo
+echo Checking if a tty change is requested
+if [ "$requires_tty" = "yes" ]; then
+	echo
+	echo Attaching ${vm_name}.img for tty change
+	vm_mountpoint=$host_vmdir/$vm_name/mnt/
+	vm_device=$( mdconfig -af $host_vmdir/$vm_name/${vm_name}.img ) ||
+	{ echo ${vm_name}.img failed to attach. Exiting ; exit 1 ; }
+	echo
+	echo Running fsck on $vm_device$vm_dev_root
+	fsck_ufs -y $vm_device$vm_dev_root
+
+	echo
+	echo Mounting $vm_device$vm_dev_root on $vm_mountpoint
+	mount /dev/$vm_device$vm_dev_root $vm_mountpoint
+
+	echo
+	echo Verifying that VM mounted on its mount point
+	( mount | grep -qw $vm_name/mnt ) || \
+		{ echo $1 did not mount. Exiting ; exit 1 ; }
 # BUG: Note that the md will remain
 
-			echo
-			echo Performing the tty change
-				f_config_ttys_preflight $vm_name # mount grep vm_name
-				f_config_ttys $vm_mountpoint
-				f_config_ttys_debug $vm_mountpoint
+	echo
+	echo Performing the tty change
+	f_config_ttys_preflight $vm_name # mount grep vm_name
+	f_config_ttys $vm_mountpoint
+	f_config_ttys_debug $vm_mountpoint
 
-				echo
-				echo Unmounting $vm_mountpoint
-				umount -f $vm_mountpoint
+	echo
+	echo Unmounting $vm_mountpoint
+	umount -f $vm_mountpoint
 
- 			echo
-				echo Detaching memory device $vm_device
-				mdconfig -du $vm_device
-		fi
+ 	echo
+	echo Detaching memory device $vm_device
+	mdconfig -du $vm_device
+fi
 
-				echo
-				echo Directory structure ready and raw VM image fetched
+fi
 
-				echo Checking for VM ID conflicts
-				f_checkconflicts $host_vmdir
+echo
+echo Directory structure ready and raw VM image fetched
 
-				echo
-				echo You can boot your VM with:
-				echo service vm onestart $vm_name
-		echo
-		exit 1
+echo Checking for VM ID conflicts
+f_checkconflicts $host_vmdir
 
-	;;
-	isoimg)
-		case $payload_compressed in
-		yes) echo ; echo Extracting $site_payload to ${vm_name}.iso
-		gunzip -c $host_distdir/$site_path/$site_payload > \
-			$host_vmdir/$vm_name/${vm_name}.iso
+# Not ideal: we are extracting compressed ISOs to the VM to "preserve" our
+# mirror of upgstream downloads
 # BUG: Need a suffix-removal routine to link uncompressed ISOs. Or put in cfg
 # Note: Who is shipping uncompressed ISOs?
-	;;
-	"") echo ; echo Linking $site_payload to ${vm_name}.iso
-		ln -sf $host_distdir/$site_path/$site_payload \
-			$host_vmdir/$vm_name/${vm_name}.iso
-	esac
 
-	if [ ! -f $host_vmdir/$vm_name/${vm_name}.iso ]; then
-		echo ${vm_name}.iso Failed to extract or link. Exiting
-		exit 1
-	fi
-	echo
-	echo Directory structure ready and ISO fetched.
-	echo
-	echo Note that FreeBSD ISO installations may require
-	echo this modication to /etc/ttys to boot properly:
-	echo
-	echo "ttyu0 \"/usr/libexec/getty 3wire.9600\" vt100 on secure"
-	echo
-	echo Checking for VM ID conflicts
-	f_checkconflicts $host_vmdir
-	echo
-	echo You can boot your VM with:
-	echo service vm oneiso $vm_name
-	echo
-	exit 1
 
-esac # ISO image installs are done at this point
+
+case $install_method in
+        rawimg)
+		echo
+		echo You can boot your VM with:
+		echo
+		echo service vm onestart $vm_name
+		echo
+		exit 0
+        ;;
+        isoimg)
+if [ "$vm_os_type" = "freebsd" ]; then
+		echo Note that FreeBSD ISO installations may require
+		echo this modication to /etc/ttys to boot properly:
+		echo
+		echo "ttyu0 \"/usr/libexec/getty 3wire.9600\" vt100 on secure"
+fi
+		echo
+		echo You can boot your VM with:
+		echo
+		echo service vm oneiso $vm_name
+		echo
+		echo Remember to stop it with "onestop"
+		exit 0
+esac # ISO/rawimage image installs are done at this point
 
 # The remainder of this script is the FreeBSD manually installation
 
-echo
-echo Verifying that we are continuing with an artisnal FreeBSD provision
+else # Middle of the large isoimg/rawimg vs. distset if statement
 
 echo
 echo Verifying that we are continuing with an artisnal FreeBSD provision
@@ -386,12 +447,12 @@ echo
 echo Initializing the vm_device variable
 case $vm_dev_type in
 	device) # Use the device specified in the configuration file
-			   return
-		;;
-		malloc) # Continue with the attached malloc device
+		return
+	;;
+	malloc) # Continue with the attached malloc device
 		vm_device=$md_device
-		;;
-		img) # Attach the disk image
+	;;
+	img) # Attach the disk image
 		vm_device=$( mdconfig -af $host_vmdir/$vm_name/${vm_name}.img ) ||
 		{ echo ${vm_name}.img failed to attach. Exiting ; exit 1 ; }
 	;;
@@ -720,5 +781,9 @@ f_checkconflicts $host_vmdir
 
 echo
 echo You can boot your VM with:
+echo
 echo service vm onestart $vm_name
 echo
+
+fi # End of the large isoimg/rawimg vs. distset if statement
+

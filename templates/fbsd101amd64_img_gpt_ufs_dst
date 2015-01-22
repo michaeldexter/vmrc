@@ -39,7 +39,7 @@ install_method="distset" # "rawimg", "isoimg", "distset" or "obj"
 install_site="ftp://ftp.freebsd.org"
 		          # Distribution payload site i.e. ftp://ftp.freebsd.org
 #install_site="file://"  # Local payload option once downloaded (choose one)
-site_path="/pub/FreeBSD/releases/amd64/10.1-RC3/"
+site_path="/pub/FreeBSD/releases/amd64/10.1-RELEASE/"
                          # Distribution payload directory path
 site_payload="base.txz kernel.txz"
                          # Distribution payload file(s) (space separated)

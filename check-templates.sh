@@ -34,12 +34,12 @@ for link in "$host_distdir"/*; do
 
 	case $install_method in
 	rawimg|isoimg)
-		wget -q --spider $install_site/$site_path/$site_payload || \
+		fetch -s $install_site/$site_path/$site_payload || \
 		echo "$link: $install_site/$site_path/$site_payload missing!"
 	;;
 	distset)
 	for distset in $site_payload; do
-		wget -q --spider $install_site/$site_path/$distest || \
+		fetch -s $install_site/$site_path/$distest || \
 		echo "$link: $install_site/$site_path/$site_payload missing!"
 	done
 	;;
