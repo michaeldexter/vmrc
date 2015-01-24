@@ -12,40 +12,42 @@ vm_dev_flags=""          # ZFS features "-d -o feature@async_destroy=enabled"
 vm_device=""             # Existing bootable block device (for vm_dev_type)
 vm_devices=""            # Additional attached full-path disk images or devices
 
-# Optional number of additional network VM virtual network interfaces, 8 max.
-vm_addtl_nics=""         # "1" through "7" (tap8<2 digit vm_id>[PCI unit 1-7]
+# VM Network devices. nicN="<type> <bridge> <MAC>" where "nicN" is sequentially
+# incrementing from nic0, "type" is "tap" or "vmnet", "bridge" is a valid
+# bridge in vm.conf or on the host and "MAC" is an optional MAC address
+# MAXIMUM 8 NICs: nic0 through nic7 as we depend on PCI slot numbers
+nic0="tap bridge0"       # i.e. "tap bridge0" "vmnet bridge1 00:99:3d:e0:e0:f6"
 
 # VM runtime boot variables
-vm_cpus="2"              # Number of VM virtual CPUs (max 16) (required)
+vm_cpus="1"              # Number of VM virtual CPUs (max 16) (required)
 vm_ram="1024"            # VM RAM Allocation in MB (required)
 vm_console="stdio"       # "stdio", "nmdm", "tmux" or "screen"
-virtio_type="ahci-hd"    # "ahci-hd" or "virtio-blk" (required)
+virtio_type="virtio-blk" # "ahci-hd" or "virtio-blk" (required)
 
 # OS-specific VM runtime boot variables
-vm_hostbridge="amd_"     # "amd_" for the AMD hostbridge (required for OpenBSD)
-bhyve_flags="-W"         # Additional bhyve(8) flags (-w is common on Linux)
-iso_grub_cfg="kopenbsd -h com0 (cd0)/5.5/amd64/bsd.rd\nboot" 
+vm_hostbridge=""         # "amd_" for the AMD hostbridge (required for OpenBSD)
+bhyve_flags="-w"         # Additional bhyve(8) flags (-w is common on Linux)
+iso_grub_cfg="linux (cd0)/arch/boot/x86_64/vmlinuz archisobasedir=arch archisolabel=ARCH_201408\ninitrd (cd0)/arch/boot/x86_64/archiso.img\n\nboot"
                          # \n separated grub.cfg (required for GRUB ISO boot)
 iso_grub_d="-d $host_vmdir/$1"
                          # ISO mode grub-bhyve -d directive
                          # -d $host_vmdir/$1 for local or -d /grub/ for VM
 iso_grub_r=""            # VM device where to find grub.cfg i.e. -r cd0,msdos1
-img_grub_cfg="kopenbsd -h com0 -r sd0a (hd0,openbsd1)/bsd\nboot" 
-                         # \n separated grub.cfg (required for GRUB img boot)
-img_grub_d="-d $host_vmdir/$1"
-                         # IMG mode grub-bhyve -d directive 
+img_grub_cfg=""          # \n separated grub.cfg (required for GRUB img boot)
+img_grub_d=""            # IMG mode grub-bhyve -d directive 
                          # -d $host_vmdir/$1 for local or -d /grub/ for VM
-img_grub_r=""            # VM device where to find grub.cfg i.e. -r hd0,msdos1
+img_grub_r="-r hd0,msdos1"
+                         # VM device where to find grub.cfg i.e. -r hd0,msdos1
 
 # Provisioning Variables
 vm_dev_size="2G"         # Disk image size in M or G for non-disk image install
 install_method="isoimg"  # "rawimg", "isoimg", "distset" or "obj"
-install_site="ftp://ftp.openbsd.org"
+install_site="ftp://ftp.osuosl.org"
                          # Distribution payload site i.e. ftp://ftp.freebsd.org
 #install_site="file://"  # Local payload option once downloaded (choose one)
-site_path="/pub/OpenBSD/5.5/amd64/"
+site_path="/pub/archlinux/iso/2015.01.01/"
                          # Distribution payload directory path
-site_payload="install55.iso"
+site_payload="archlinux-2015.01.01-dual.iso"
                          # Distribution payload file(s) (space separated)
 payload_compressed=""    # "yes" if compressed ISO or rawimg payload  
 requires_tty=""          # "yes" if a serial tty is required (FreeBSD only)
@@ -64,5 +66,12 @@ vm_password=""           # VM password (clear text for now)
 
 # Comments:
 
-# During installation:
-# Change the default console to com0? [no] yes
+# Drops to a shell at:
+
+# :: Mounting '/dev/disk/by-label/' to '/run/archiso/bootmnt'
+# Waiting 30 seconds for device /dev/disk/by-label/ ...
+# ERROR: '/dev/disk/by-label/' device did not show up after 30 seconds...
+#    Falling back to interactive prompt
+#   You can try to fix the problem manually, log out when you are finished
+# sh: can't access tty; job control turned off
+

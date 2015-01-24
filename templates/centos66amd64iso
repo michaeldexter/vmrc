@@ -2,18 +2,21 @@
 # mkvm.sh copies this to /usr/local/vmrc/vm/<vmname><vmid>.conf
 
 # VM global variables used by both provisioning and at runtime
-vm_os_type="freebsd"     # "freebsd" or "grub" (required)
+vm_os_type="grub"        # "freebsd" or "grub" (required)
 vm_dev_type="img"        # (disk) "img", (RAM) "malloc", "zvol" or "device"
-vm_dev_root="p2"         # p2, p3, s1a etc. (required for FreeBSD fsck & mount)
-vm_dev_fs="ufs"          # "ufs" or "zfs" (for FreeBSD UFS fsck or provisioning)
+vm_dev_root=""           # p2, p3, s1a etc. (required for FreeBSD fsck & mount)
+vm_dev_fs=""             # "ufs" or "zfs" (for FreeBSD UFS fsck or provisioning)
 vm_dev_flags=""          # ZFS features "-d -o feature@async_destroy=enabled"
 
 # Existing boot device in /dev/ if "device" was set for vm_dev_type. i.e. "ada2"
 vm_device=""             # Existing bootable block device (for vm_dev_type)
 vm_devices=""            # Additional attached full-path disk images or devices
 
-# Optional number of additional network VM virtual network interfaces, 8 max.
-vm_addtl_nics=""         # "1" through "7" (tap8<2 digit vm_id>[PCI unit 1-7]
+# VM Network devices. nicN="<type> <bridge> <MAC>" where "nicN" is sequentially
+# incrementing from nic0, "type" is "tap" or "vmnet", "bridge" is a valid
+# bridge in vm.conf or on the host and "MAC" is an optional MAC address
+# MAXIMUM 8 NICs: nic0 through nic7 as we depend on PCI slot numbers
+nic0="tap bridge0"       # i.e. "tap bridge0" "vmnet bridge1 00:99:3d:e0:e0:f6"
 
 # VM runtime boot variables
 vm_cpus="1"              # Number of VM virtual CPUs (max 16) (required)
@@ -23,40 +26,42 @@ virtio_type="ahci-hd"    # "ahci-hd" or "virtio-blk" (required)
 
 # OS-specific VM runtime boot variables
 vm_hostbridge=""         # "amd_" for the AMD hostbridge (required for OpenBSD)
-bhyve_flags=""           # Additional bhyve(8) flags (-w is common on Linux)
-iso_grub_cfg=""          # \n separated grub.cfg (required for GRUB ISO boot)
-iso_grub_d=""            # ISO mode grub-bhyve -d directive
+bhyve_flags="-w"         # Additional bhyve(8) flags (-w is common on Linux)
+iso_grub_cfg="linux (cd0)/isolinux/vmlinuz text\ninitrd (cd0)/isolinux/initrd.img\nboot" 
+                         # \n separated grub.cfg (required for GRUB ISO boot)
+iso_grub_d="-d $host_vmdir/$1"
+                         # ISO mode grub-bhyve -d directive
                          # -d $host_vmdir/$1 for local or -d /grub/ for VM
 iso_grub_r=""            # VM device where to find grub.cfg i.e. -r cd0,msdos1
-img_grub_cfg=""          # \n separated grub.cfg (required for GRUB img boot)
+img_grub_cfg="linux (hd0,msdos1)/vmlinuz-2.6.32-431.el6.x86_64 ro root=/dev/mapper/VolGroup-lv_root\ninitrd (hd0,msdos1)/initramfs-2.6.32-431.el6.x86_64.img\nboot"
+                         # \n separated grub.cfg (required for GRUB img boot)
 img_grub_d=""            # IMG mode grub-bhyve -d directive 
                          # -d $host_vmdir/$1 for local or -d /grub/ for VM
 img_grub_r=""            # VM device where to find grub.cfg i.e. -r hd0,msdos1
 
 # Provisioning Variables
-vm_dev_size="2G"         # Disk image size in M or G for non-disk image install
-install_method="distset" # "rawimg", "isoimg", "distset" or "obj"
-install_site="ftp://ftp.freebsd.org"
-		          # Distribution payload site i.e. ftp://ftp.freebsd.org
+vm_dev_size="3G"         # Disk image size in M or G for non-disk image install
+install_method="isoimg"  # "rawimg", "isoimg", "distset" or "obj"
+install_site="ftp://ftp.osuosl.org"
+                         # Distribution payload site i.e. ftp://ftp.freebsd.org
 #install_site="file://"  # Local payload option once downloaded (choose one)
-site_path="/pub/FreeBSD/releases/amd64/amd64/9.1-RELEASE/"
+site_path="/pub/centos/6.6/isos/x86_64/"
                          # Distribution payload directory path
-site_payload="base.txz kernel.txz"
+site_payload="CentOS-6.6-x86_64-minimal.iso"
                          # Distribution payload file(s) (space separated)
-payload_compressed=""    # "yes" if compressed ISO or rawimg payload
-requires_tty="yes"       # "yes" if a serial tty is required (FreeBSD only)
+payload_compressed=""    # "yes" if compressed ISO or rawimg payload  
+requires_tty=""          # "yes" if a serial tty is required (FreeBSD only)
 obj_srcdir=""            # Location of OS sources (uses /usr/obj) (FreeBSD only)
 
 # FreeBSD-specific VM provisioning variables
-vm_dev_util="gpart"      # Partitioning tool "fdisk" or "gpart" (MBR or GPT)
-vm_dev_layout="gpt"      # "gpt" or "mbr" volume layout
-vm_timezone="America/Los_Angeles"
-                         # VM timezone
-vm_hostname="bhyveguest" # VM hostname
+vm_dev_util=""           # Partitioning tool "fdisk" or "gpart" (MBR or GPT)
+vm_dev_layout=""         # "gpt" or "mbr" volume layout
+vm_timezone=""           # VM timezone
+vm_hostname=""           # VM hostname
 vm_ipv4=""               # VM IPv4 address (blank for DHCP)
 vm_gw=""                 # VM IPv4 gateway
 vm_searchdomain=""       # VM resolv.conf searchdomain
 vm_dns=""                # VM resolv.conf IPv4 DNS server
-vm_password="bsd"        # VM password (clear text for now)
+vm_password=""           # VM password (clear text for now)
 
 # Comments:
