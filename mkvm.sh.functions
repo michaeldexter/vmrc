@@ -19,7 +19,7 @@
 ############################################################ INFORMATION
 # 
 # Title: make VM script function library
-# Version: v.0.8.7
+# Version: v.0.7.1
 #
 # Functions used by the mkvm.sh Virtual Machine provisioning script
 #
@@ -28,24 +28,6 @@
 f_timestamp() # A simple timestamp function
 {
 echo  $( date "+%Y%m%d-%H%M%S" )
-}
-
-f_filetype() # A smarter file(1) that briefer than brief mode
-{
-case $( file -bi $1 ) in
-		"application/x-bzip2; charset=binary") echo .bz2
-	;;
-		"application/x-compress; charset=binary") echo .Z
-	;;
-		"application/x-gzip; charset=binary") echo .gz
-	;;
-		"application/x-xz; charset=binary") echo .xz
-	;;
-		"application/x-zip; charset=binary") echo .zip
-	;;
-	*) echo Unrecognized file format
-# FYI images are application/octet-stream; charset=binary
-esac
 }
 
 # md(4) functions from vm and may be useful after mid-provision exits

@@ -5,7 +5,7 @@
 vm_os_type="grub"        # "freebsd" or "grub" (required)
 vm_dev_type="img"        # (disk) "img", (RAM) "malloc", "zvol" or "device"
 vm_dev_root=""           # p2, p3, s1a etc. (required for FreeBSD fsck & mount)
-vm_dev_fs="zfs"          # "ufs" or "zfs" (for FreeBSD UFS fsck or provisioning)
+vm_dev_fs=""             # "ufs" or "zfs" (for FreeBSD UFS fsck or provisioning)
 vm_dev_flags=""          # ZFS features "-d -o feature@async_destroy=enabled"
 
 # Existing boot device in /dev/ if "device" was set for vm_dev_type. i.e. "ada2"
@@ -24,13 +24,13 @@ virtio_type="ahci-hd"    # "ahci-hd" or "virtio-blk" (required)
 # OS-specific VM runtime boot variables
 vm_hostbridge=""         # "amd_" for the AMD hostbridge (required for OpenBSD)
 bhyve_flags=""           # Additional bhyve(8) flags (-w is common on Linux)
-iso_grub_cfg="kfreebsd -h /boot/kernel/kernel\nkfreebsd_loadenv /boot/device.hints\nset kFreeBSD.boot_serial=1\nset kFreeBSD.hint.uart.0.at=isa\nset kFreeBSD.hint.uart.0.port=0x3F8\nset kFreeBSD.hint.uart.0.flags=0x10\nset kFreeBSD.hint.uart.0.irq=4\nboot"
+iso_grub_cfg="knetbsd -h -r cd0a (cd0)/netbsd\nboot" 
                          # \n separated grub.cfg (required for GRUB ISO boot)
 iso_grub_d="-d $host_vmdir/$1"
                          # ISO mode grub-bhyve -d directive
                          # -d $host_vmdir/$1 for local or -d /grub/ for VM
 iso_grub_r=""            # VM device where to find grub.cfg i.e. -r cd0,msdos1
-img_grub_cfg="kfreebsd -h /boot/kernel/kernel\nkfreebsd_loadenv /boot/device.hints\nset kFreeBSD.boot_serial=1\nset kFreeBSD.hint.uart.0.at=isa\nset kFreeBSD.hint.uart.0.port=0x3F8\nset kFreeBSD.hint.uart.0.flags=0x10\nset kFreeBSD.hint.uart.0.irq=4\nboot"
+img_grub_cfg="knetbsd -h -r wd0a (hd0,netbsd1)/netbsd\nboot"
                          # \n separated grub.cfg (required for GRUB img boot)
 img_grub_d="-d $host_vmdir/$1"
                          # IMG mode grub-bhyve -d directive 
@@ -38,17 +38,17 @@ img_grub_d="-d $host_vmdir/$1"
 img_grub_r=""            # VM device where to find grub.cfg i.e. -r hd0,msdos1
 
 # Provisioning Variables
-vm_dev_size="8G"         # Disk image size in M or G for non-disk image install
+vm_dev_size="2G"         # Disk image size in M or G for non-disk image install
 install_method="isoimg"  # "rawimg", "isoimg", "distset" or "obj"
-install_site="http://iso.cdn.pcbsd.org"
-		          # Distribution payload site i.e. ftp://ftp.freebsd.org
+install_site="ftp://iso.netbsd.org"
+                         # Distribution payload site i.e. ftp://ftp.freebsd.org
 #install_site="file://"  # Local payload option once downloaded (choose one)
-site_path="/10.1-RELEASE/amd64/"
+site_path="/pub/NetBSD/iso/6.1.4/"
                          # Distribution payload directory path
-site_payload="TRUEOS10.1-RC1-10-22-2014-x64-DVD-USB.iso"
+site_payload="NetBSD-6.1.4-amd64.iso"
                          # Distribution payload file(s) (space separated)
-payload_compressed=""    # "yes" if compressed ISO or rawimg payload
-requires_tty="yes"       # "yes" if a serial tty is required (FreeBSD only)
+payload_compressed=""    # "yes" if compressed ISO or rawimg payload  
+requires_tty=""          # "yes" if a serial tty is required (FreeBSD only)
 obj_srcdir=""            # Location of OS sources (uses /usr/obj) (FreeBSD only)
 
 # FreeBSD-specific VM provisioning variables
@@ -60,8 +60,12 @@ vm_ipv4=""               # VM IPv4 address (blank for DHCP)
 vm_gw=""                 # VM IPv4 gateway
 vm_searchdomain=""       # VM resolv.conf searchdomain
 vm_dns=""                # VM resolv.conf IPv4 DNS server
-vm_password="bsd"        # VM password (clear text for now)
+vm_password=""           # VM password (clear text for now)
 
 # Comments:
+# Requires SVN r271338 or newer and equivalent grub2-bhyve
+# https://svnweb.freebsd.org/base?view=revision&revision=271338
+# https://github.com/grehan-freebsd/grub2-bhyve
 
-# -r cd0 works for GRUB but will not boot
+# Hint: With updated sources, you can simply type 'make' in:
+# /usr/src/usr.sbin/bhyve

@@ -43,7 +43,7 @@ install_method="isoimg"  # "rawimg", "isoimg", "distset" or "obj"
 install_site="ftp://ftp.openbsd.org"
                          # Distribution payload site i.e. ftp://ftp.freebsd.org
 #install_site="file://"  # Local payload option once downloaded (choose one)
-site_path="/pub/OpenBSD/5.6/amd64/"
+site_path="/pub/OpenBSD/snapshots/amd64/"
                          # Distribution payload directory path
 site_payload="install56.iso"
                          # Distribution payload file(s) (space separated)
