@@ -29,10 +29,8 @@ iso_grub_d=""            # ISO mode grub-bhyve -d directive
                          # -d $host_vmdir/$1 for local or -d /grub/ for VM
 iso_grub_r="-r cd0"      # VM device where to find grub.cfg i.e. -r cd0,msdos1
 img_grub_cfg=""          # \n separated grub.cfg (required for GRUB img boot)
-img_grub_d=""            # IMG mode grub-bhyve -d directive
+img_grub_d=""            # IMG mode grub-bhyve -d directive 
                          # -d $host_vmdir/$1 for local or -d /grub/ for VM
-                         # LVM installs should use "-d /grub" while
-                         # ext4 installs should use the default ""
 img_grub_r="-r hd0,msdos1"
                          # VM device where to find grub.cfg i.e. -r hd0,msdos1
 
