@@ -19,7 +19,7 @@
 ############################################################ INFORMATION
 #
 # Title: virtual machine rc script
-# Version: v.0.8.7
+# Version: v.0.8.8
 #
 # rc(8) command script for managing virtual machines.
 #
@@ -157,14 +157,6 @@ f_info "Verifying if if_bridge.ko is loaded and loading if necessary"
 	kldload if_bridge ; } || \
 	{ f_info "if_bridge.ko failed to load. Skipping" ; return 1 ; }
 
-f_info "Verifying if the host network bridge is up"
-if [ ! "$( ifconfig | grep bridge$host_bridge )" ]; then
-		f_info "Running ifconfig bridge$host_bridge create"
-		ifconfig bridge$host_bridge create
-		f_info "Associating the host NIC with the host network bridge"
-		ifconfig bridge$host_bridge addm $host_nic up
-fi
-
 f_info "Verifying if if_tap.ko is loaded and loading if necessary"
 	kldstat | grep -qw if_tap.ko || \
 	{ f_info "if_tap.ko not loaded. Loading" ; \
@@ -176,6 +168,31 @@ if [ $(sysctl -n net.link.tap.up_on_open) = "0" ]; then
 	f_info "Setting net.link.tap.user_open sysctl to 1"
 	sysctl net.link.tap.up_on_open=1
 fi
+
+f_info "Configuring host bridge network devices"
+# Step through bridge0, bridge1, bridge2... until none exist
+# FIX: Should these be local variables?
+br_id="0" # Bridge ID, used as as a counter and "bridgeN". "br"=bridge
+while [ ! "$( br="bridge$br_id"; eval vars=\$$br; echo $vars )" = "" ]; do
+	local bridge_nic=""
+	local bridge_mac=""
+	br="bridge$br_id"; eval vars=\$$br # Repeat, as that was a sub-shell
+# Note the NIC acrobatics that allow these arguments to be switched
+	bridge_nic=$( echo "$vars" | awk '{ print $1 }' )
+	bridge_mac=$( echo "$vars" | awk '{ print $2 }' )
+
+# Verify if the bridge does not exist. PERHAPS verify the MAC address
+	if [ ! "$( ifconfig | grep $br )" ]; then
+#		f_info "Running ifconfig $br create"
+# No visible f_info messages in a loop?
+		ifconfig $br create ether $bridge_mac
+# Default MAC is 00:00:00:00:00:00 if $bridge_mac is not initialized
+#		f_info "Associating $bridge_nic with $br"
+		ifconfig $br addm $bridge_nic up
+	fi
+
+	br_id=$((br_id+1)) # Increment our counter
+done
 
 } # end f_hostprep
 
@@ -244,7 +261,7 @@ if [ "$vm_os_type" = "freebsd" -a "$vm_dev_fs" = "ufs" ]; then
 			{ f_error "$vm_device is missing. Skipping" ; return 1 ; }
 			f_info "Detaching any previous md attachments"
 			f_mddestroy $1
-			fi_info "Attempting to attach $vm_device"
+			f_info "Attempting to attach $vm_device"
 			dev_to_fsck=$( mdconfig -af $vm_device )
 			[ -e /dev/$dev_to_fsck ] ||
 		{ f_error "$vm_device did not attach. Skipping" ; return 1 ; }
@@ -367,6 +384,7 @@ f_boot () # $host_vmdir $found ($1) ($vm_name from the multi-argument loop)
 
 # Setting up VM PCI devices:
 
+# FUBAR double check for multiple bridges
 # 0 hostbridge
 # 2 boot block device
 # 3:0-7 virtual network devices
@@ -376,6 +394,25 @@ f_boot () # $host_vmdir $found ($1) ($vm_name from the multi-argument loop)
 
 # Note that PCI devices can be single digit 0, or 0:0 with a limit of 8 total
 # Simply add another device if 8 is not enough: 7:[0-7] etc.
+
+# A sample bhyve command we are building for vm1 with three network iterfaces
+
+# /usr/sbin/bhyve -c 1 -m 1024 -A -H -s 0,hostbridge \
+# -s 2,ahci-hd,/usr/local/vmrc/vm/vm0/vm1.img \
+# -s 3:0,virtio-net,tap8010 -s 3:1,virtio-net,tap8011 -s 3:2,virtio-net,tap8012\
+# -s 5,lpc -l com1,stdio vm0
+
+# Desired networkworking
+# bridges have options
+# tap is assigned to a bridge and provided to bhyve with options 
+
+# tapN[,mac=xx:xx:xx:xx:xx:xx]
+# vmnetN[,mac=xx:xx:xx:xx:xx:xx]
+
+# FUBAR original host bridge configuration
+# ifconfig bridge$host_bridge create
+# ifconfig bridge3 create ether 02:00:00:00:00:00
+# ifconfig bridge$host_bridge addm $host_nic up
 
 		case $vm_dev_type in
 		device|malloc)
@@ -440,53 +477,74 @@ device_flags="$device_flags -s 6:${dev_count},${virtio_type},${device}"
 	fi
 
 # MULTIPLE NIC ACROBATICS:
-# Example:
-# vm3 has a default NIC 0 of tap8030 NIC on PCI 3:0, tap8031 is NIC 1 on PCI 3:1
-# WHY 8 you might ask? ifconfig can't take "tap020" so we use "tap8020".
-# 8 represents infinity... The middle digits represent the VM ID in the tap dev
+# All NICs are prefixed with "8" which is arbitrary and are on PCI device 3:N
+# vm3 tap NIC 0 on PCI 3:0 is tap8030 or tap8<VM ID><NIC>
+# vm3 vmnet1 NIC 1 on PCI 3:1 is vmnet8031
+# Variable length network devices would be ambiguous and ifconfig cannot accept
+# "tap020" so we use "tap8020"
 
-f_info "Starting VM Networking"
-local tap_prefix=8 # Keep in sync with the local in f_stop
-local tap_base_id=$vm_id
-local tap_id="$(printf "%02i" "$tap_base_id")" # vm2 "2" -> 02 for tap8020
+f_info "Configuring VM $1 network devices"
+local nic_prefix=8 # Keep in sync with the local in f_stop
+local nic_base_id=$vm_id
+local nic_vm="$(printf "%02i" "$nic_base_id")" # vm2 "2" -> 02 for tap8020
+local nic_flags="" # The flags for all NICs we will pass into the bhyve command
 
-local tap_unit=0 #Additional vtnet PCI device and tap device suffix
+local nic_id="0" # NIC ID, used as as a counter and "nicN" as we step through
+# FIX: LOSE THESE FORKS!
+while [ ! "$( nic="nic$nic_id"; eval vars=\$$nic; echo $vars )" = "" ]; do
+	local nic_type=""
+	local nic_bridge=""
+	local nic_mac=""
+        nic="nic$nic_id"; eval vars=\$$nic # Repeat, as that was a sub-shell
+        nic_type=$( echo "$vars" | awk '{ print $1 }' ) # tap or vmnet
+# We don't know if a NIC will have a bridge, MAC or both
+        nic_second=$( echo "$vars" | awk '{ print $2 }' ) # From vm.conf or host
+	nic_third=$( echo "$vars" | awk '{ print $3 }' ) # Both are optional
 
-# Initialize the first VM NIC
+# FIX: Should throughly validate bridge and MAC arguments
+	nic_second_taste=${nic_second%${nic_second#?}}
+	case $nic_second_taste in
+		b) nic_bridge=$nic_second		# (b)ridge?
+		;;
+		[0-9]) nic_mac=$nic_second		# [0-9]0:00:00:00:00:00
+	esac						# Else uninitialized
 
-local nic_flags=""
-f_info "Verifying if tap$tap_prefix$tap_id$tap_unit already exists"
-if [ ! "$( ifconfig | grep tap$tap_prefix$tap_id$tap_unit )" ]; then
-	f_info "Running ifconfig tap$tap_prefix$tap_id$tap_unit create"
-	echo ifconfig tap$tap_prefix$tap_id$tap_unit create > \
+	nic_third_taste=${nic_third%${nic_third#?}}
+	case $nic_third_taste in
+		b) nic_bridge=$nic_third		# Repeat
+		;;
+		[0-9]) nic_mac=$nic_third
+	esac
+
+        # Verify if the NIC already exists. PERHAPS verify bridge and MAC too
+	f_info "Verifying if $nic_type$nic_prefix$nic_vm$nic_id already exists"
+
+	if [ ! "$( ifconfig | grep $nic_type$nic_prefix$nic_vm$nic_id )" ]; then
+	f_info "Running ifconfig $nic_type$nic_prefix$nic_vm$nic_id create"
+	echo ifconfig $nic_type$nic_prefix$nic_vm$nic_id create > \
 		$host_vmdir/$1/ifconfig_cmd.sh
-	ifconfig tap$tap_prefix$tap_id$tap_unit create
+	ifconfig $nic_type$nic_prefix$nic_vm$nic_id create
+
+f_info "Running ifconfig $nic_bridge addm $nic_type$nic_prefix$nic_vm$nic_id up"
+echo ifconfig $nic_bridge addm $nic_type$nic_prefix$nic_vm$nic_id up >> \
+	$host_vmdir/$1/ifconfig_cmd.sh
+ifconfig $nic_bridge addm $nic_type$nic_prefix$nic_vm$nic_id up
 fi
-nic_flags="-s 3:${tap_unit},virtio-net,tap$tap_prefix$tap_id$tap_unit"
 
-f_info "Running ifconfig bridge$host_bridge addm tap$tap_prefix$tap_id$tap_unit up"
+# Assembling the NIC Flags
+new_flags="-s 3:${nic_id},virtio-net,$nic_type$nic_prefix$nic_vm$nic_id"
+# FIX: Verify the double use of nic_id at the beginning and end
 
-echo ifconfig bridge$host_bridge addm tap$tap_prefix$tap_id$tap_unit up >> \
-	$host_vmdir/$1/ifconfig_cmd.sh
-ifconfig bridge$host_bridge addm tap$tap_prefix$tap_id$tap_unit up
-
-# Check for additional requested VM NICs and create
-	if [ ${vm_addtl_nics:-0} -gt 0 ]; then # if gt "" or "0" additional nics
-		f_info "$vm_addtl_nics additional virtual NICs requested"
-		while [ $tap_unit -lt $vm_addtl_nics ]; do # start at unit 0
-			tap_unit=$((tap_unit+1)) # increment it
-
-nic_flags="$nic_flags -s 3:${tap_unit},virtio-net,tap$tap_prefix$tap_id$tap_unit"
-# Informational info or echo commands are not working here because of the loop?
-		echo ifconfig tap$tap_prefix$tap_id$tap_unit create >> \
-				$host_vmdir/$1/ifconfig_cmd.sh
-		ifconfig tap$tap_prefix$tap_id$tap_unit create
-
-echo ifconfig bridge$host_bridge addm tap$tap_prefix$tap_id$tap_unit up >> \
-	$host_vmdir/$1/ifconfig_cmd.sh
-ifconfig bridge$host_bridge addm tap$tap_prefix$tap_id$tap_unit up
-		done
+	if [ ! "$nic_mac" = "" ]; then
+		new_flags="${new_flags},mac=$nic_mac"
 	fi
+
+	# Append the new NIC flags from this cycle
+	nic_flags="$nic_flags $new_flags"
+
+        nic_id=$((nic_id+1)) # Increment our counter
+done # End while NIC loop
+
 
 # Experimental and dangerous considering that we are root:
 # Run a preflight script to set up devices, bridges etc.
@@ -603,20 +661,25 @@ fi # No bhyve process running for the VM, continue the teardown...
 	f_info "Destroying $1 with bhyvectl"
 	/usr/sbin/bhyvectl --destroy --vm=$1 # > /dev/null 2>&1
 
-	f_info "Destroying tap network devices"
-	# It appears they are removed from the bridge upon destruction
-		local tap_prefix=8 # Keep in sync with the local in f_boot
-		local tap_count=0
-		local tap_base_id=$tap_id
-		tap_base_id="$( printf "%02i" $vm_id)"
+	f_info "Destroying VM $1 network devices"
+# Idea is to destroy all possible remnant tap and vmnet devices
+# FIX: Ideally, parse one dump of ifconfig output
+# It appears that devices are removed from their bridges upon destruction
 
-		while [ $tap_count -lt 9 ]; do
-		f_info "Checking for tap$tap_prefix${tap_base_id}$tap_counQ"
-		ifconfig | grep -qw tap$tap_prefix${tap_base_id}$tap_count && \
-		{ f_info "Destroying tap$tap_prefix${tap_base_id}$tap_count" ; \
-		ifconfig tap$tap_prefix${tap_base_id}$tap_count destroy ; }
-				tap_count=$((tap_count+1))
-		done
+local nic_prefix=8 # Keep in sync with the local in f_start
+local nic_base_id=$vm_id
+local nic_vm="$(printf "%02i" "$nic_base_id")" # vm2 "2" -> 02 for tap8020
+local nic_id="0" # NIC ID, used as as a counter and "nicN" as we step through
+
+	while [ $nic_id -lt 10 ]; do
+# Check for tap device
+		ifconfig | grep -qw tap$nic_prefix$nic_vm$nic_id && \
+		ifconfig tap$nic_prefix$nic_vm$nic_id destroy
+# Check for vmnet device
+		ifconfig | grep -qw vmnet$nic_prefix$nic_vm$nic_id && \
+		ifconfig vmnet$nic_prefix$nic_vm$nic_id destroy
+		nic_id=$((nic_id+1))
+	done
 
 		[ -f $host_vmdir/$1/${1}.conf ] && . $host_vmdir/$1/${1}.conf
 		[ $vm_os_type ] || \

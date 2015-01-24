@@ -2,7 +2,7 @@
 # 
 ################################################################ LICENSE
 #
-# Copyright (c) 2012-2014 Michael Dexter <editor@callfortesting.org>
+# Copyright (c) 2012-2015 Michael Dexter <editor@callfortesting.org>
 # 
 # Permission to use, copy, modify, and distribute this software for any
 # purpose with or without fee is hereby granted, provided that the above
@@ -19,7 +19,7 @@
 ############################################################ INFORMATION
 #
 # Title: make VM script
-# Version: v.0.8.7
+# Version: v.0.8.8
 #
 # Script to provision FreeBSD Virtual Machines for use with vmrc
 #
@@ -273,44 +273,60 @@ echo Expanding or copying the payload as necessary
 
 if [ "$install_method" = "isoimg" -o "$install_method" = "rawimg" ]; then
 
+echo Checking if $host_distdir/$site_path/$site_payload is compressed
 filetype=$( f_filetype $host_distdir/$site_path/$site_payload )
 echo Download appears to be type $filetype
 
 case $filetype in
-	.bz2) echo Handling bz2
+	.bz2) echo Handling .bz2
+# Why does this test sometimes work with ! and sometimes not?
 		if [ ! -f $host_distdir/$site_path/$site_payload.unc ]; then
+			echo Expanding $host_distdir/$site_path/$site_payload \
+			to $host_distdir/$site_path/$site_payload.unc
 			gunzip -c -k $host_distdir/$site_path/$site_payload > \
 			$host_distdir/$site_path/$site_payload.unc ||
 				{ echo Image extraction failed. Exiting ; \
 			rm -rf $host_vmdir/$vm_name/$vm_name ; exit 1 ; }
 		fi
 	;;
-	.Z) echo Handling Z
+	.Z) echo Handling .Z
+# Why does this test sometimes work with ! and sometimes not?
 		if [ ! -f $host_distdir/$site_path/$site_payload.unc ]; then
+			echo Expanding $host_distdir/$site_path/$site_payload \
+			to $host_distdir/$site_path/$site_payload.unc
 			gunzip -c -k $host_distdir/$site_path/$site_payload > \
 			$host_distdir/$site_path/$site_payload.unc ||
 				{ echo Extraction failed. Exiting ; \
 			rm -rf $host_vmdir/$vm_name/$vm_name ; exit 1 ; }
 		fi
 	;;
-	.gz) echo Handling gz
+	.gz) echo Handling .gz
+# Why does this test sometimes work with ! and sometimes not?
 		if [ ! -f $host_distdir/$site_path/$site_payload.unc ]; then
+			echo Expanding $host_distdir/$site_path/$site_payload \
+			to $host_distdir/$site_path/$site_payload.unc
 			gunzip -c -k $host_distdir/$site_path/$site_payload > \
 			$host_distdir/$site_path/$site_payload.unc ||
 				{ echo Extraction failed. Exiting ; \
 			rm -rf $host_vmdir/$vm_name/$vm_name ; exit 1 ; }
 		fi
 	;;
-	.xz) echo Handling xz
+	.xz) echo Handling .xz
+# Why does this test sometimes work with ! and sometimes not?
 		if [ ! -f $host_distdir/$site_path/$site_payload.unc ]; then
+			echo Expanding $host_distdir/$site_path/$site_payload \
+			to $host_distdir/$site_path/$site_payload.unc
 			unxz -c -k $host_distdir/$site_path/$site_payload > \
 			$host_distdir/$site_path/$site_payload.unc ||
 				{ echo Extraction failed. Exiting ; \
 			rm -rf $host_vmdir/$vm_name/$vm_name ; exit 1 ; }
 		fi
 	;;
-	.zip) echo Handling zip
+	.zip) echo Handling .zip
+# Why does this test sometimes work with ! and sometimes not?
 		if [ ! -f $host_distdir/$site_path/$site_payload.unc ]; then
+			echo Expanding $host_distdir/$site_path/$site_payload \
+			to $host_distdir/$site_path/$site_payload.unc
 			gunzip -c -k $host_distdir/$site_path/$site_payload > \
 			$host_distdir/$site_path/$site_payload.unc ||
 				{ echo Extraction failed. Exiting ; \
@@ -330,7 +346,8 @@ case $install_method in
 		ending=.img
 esac
 
-eval $imagecommand $host_distdir/$site_path/$site_payload \
+echo Linking or Copying $host_distdir/$site_path/$site_payload.unc into place
+eval $imagecommand $host_distdir/$site_path/$site_payload.unc \
 $host_vmdir/$vm_name/$vm_name$ending ||
 	{ echo Image failed to copy or link. Exiting ; \
 		rm -rf $host_vmdir/$vm_name/$vm_name ; exit 1 ; }
@@ -782,8 +799,10 @@ f_checkconflicts $host_vmdir
 echo
 echo You can boot your VM with:
 echo
-echo service vm onestart $vm_name
+echo service vm oneload $vm_name
+echo service vm oneboot $vm_name
 echo
+echo Set a detached console to use service vm onestart $vm_name
 
 fi # End of the large isoimg/rawimg vs. distset if statement
 
