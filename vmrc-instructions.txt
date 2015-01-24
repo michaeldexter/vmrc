@@ -1,6 +1,6 @@
 ################################################################ LICENSE
 #
-# Copyright (c) 2012-2014 Michael Dexter <editor@callfortesting.org>
+# Copyright (c) 2012-2015 Michael Dexter <editor@callfortesting.org>
 #
 # Permission to use, copy, modify, and distribute this software for any
 # purpose with or without fee is hereby granted, provided that the above
@@ -17,7 +17,11 @@
 ############################################################ INFORMATION
 #
 # Title: virtual machine rc script instructions
-# Version: v.0.8.7
+<<<<<<< HEAD
+# Version: v.0.8.8
+=======
+# Version: v.0.8.6
+>>>>>>> parent of 29c8537... v.0.8.7 MetBSD Edition - Lots of changes
 #
 # vmrc usage instructions and developer notes
 #
@@ -28,6 +32,15 @@ Thank you for trying vmrc, the Virtual Machine rc script.
 Latest development snapshot: http://vmrc.bsd.lv/vmrc-snapshot.tar
 GitHub repository: https://github.com/michaeldexter/vmrc
 
+<<<<<<< HEAD
+NOTABLE CHANGES FROM .0.8.7 to .0.8.8
+
+* multiple bridge support in vm.conf or leave plank for a pre-configured bridge
+* bridge MAC addres support
+* No default VM NIC: choose tap or vmnet with or without MAC address
+* Updated templates
+* Misc fixes, as always
+
 NOTABLE CHANGES	from .0.8.6 to .0.8.7
 
 * MeetBSD/DevSummit Input. Lots
@@ -35,6 +48,8 @@ NOTABLE CHANGES	from .0.8.6 to .0.8.7
 * Download payload tasting for compression
 * See the GitHub visual diffs
 
+=======
+>>>>>>> parent of 29c8537... v.0.8.7 MetBSD Edition - Lots of changes
 .0.8.6: Added ACPI shutdown
 .0.8.5: Enabled OpenBSD reboot. Updated flashrd version
 .0.8.4: Bug fixes
@@ -171,12 +186,17 @@ CONFLICTING: vm0, freebsd0 and openbsd0 (trailing ID number must be unique)
 As of version 0.7.1, mkvm.sh will check for and report ID conflicts
 
 
-Once a VM is provisioned, it is managed with the "vm" rc script which can be
-enabled in the host's /usr/local/etc/rc.conf, i.e.:
+Once a VM is provisioned, it is managed with the "vm" rc script, hence "vmrc".
 
-/usr/local/etc/rc.d/vm onestart freebsd0
+All templates are set to a captive, stdio console which requires them to be
+manually loaded and booted until a detached console is set in the .conf file.
 
-if enabled in /usr/local/etc/rc.conf :
+To load and boot a new VM:
+
+/usr/local/etc/rc.d/vm oneload freebsd0
+/usr/local/etc/rc.d/vm oneboot freebsd0
+
+Once a detached console and vm is enabled in /usr/local/etc/rc.conf :
 
 /usr/local/etc/rc.d/vm start freebsd0
 
@@ -184,7 +204,7 @@ NB! You must set a "tmux" or "screen" console type for the "start" directive
 to work and install ether "tmux" or "screen".
 
 
-VMs can also be loaded, booted and stopped in a linear manner for debugging:
+VMs can always be loaded, booted and stopped in a linear manner for debugging:
 
 /usr/local/etc/rc.d/vm load freebsd0
 /usr/local/etc/rc.d/vm boot freebsd0

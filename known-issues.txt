@@ -3,16 +3,21 @@ Known vmrc Issues
 1. Many GNU/Linux are configured for ISO boot but not hd0 boot. Know GNU/Linux?
 2. Templates prefixed with dyn_ need frequent updating. (i.e. snapshots)
 3. bhyveload has a 31 character VM name limit
+<<<<<<< HEAD
 4. FreeBSD creates superflous tap0 devices and runs dhcp on them
-5. Templates using "Latest" rawimg images will not update - check timestamps?
+5. Templates using "Latest" rawimg images will not know to update if they change
 6. cu processes on idle nmdm devices can go nuts
+7. mkvm has a test to check for payload.enc that seems to ping pong between
+   needing ! and not.
+=======
+4. Must test multiple VM boot
+>>>>>>> parent of 29c8537... v.0.8.7 MetBSD Edition - Lots of changes
 
 Known Feature Requests
 
-Multiple Bridge Support (bridge/tap pairs?)
-VM MAC Address Support (Easy with one NIC, not for multiple)
-Suggestions how to store these mappings?
-API support
+DONE: Multiple Bridge Support (bridge/tap pairs?)
+DONE: VM MAC Address Support (Easy with one NIC, not for multiple)
+API support (Beyond the fact that rc has not changed in decades)
 
 Bugs, questions and/or comments:
 Michael Dexter <editor@callfortesting.org>
