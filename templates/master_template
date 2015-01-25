@@ -44,7 +44,6 @@ install_site=""          # Distribution payload site i.e. ftp://ftp.freebsd.org
 #install_site="file://"  # Local payload option once downloaded (choose one)
 site_path=""             # Distribution payload directory path
 site_payload=""          # Distribution payload file(s) (space separated)
-payload_compressed=""    # "yes" if compressed ISO or rawimg payload  
 requires_tty=""          # "yes" if a serial tty is required (FreeBSD only)
 obj_srcdir=""            # Location of OS sources (uses /usr/obj) (FreeBSD only)
 

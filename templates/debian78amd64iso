@@ -47,7 +47,6 @@ site_path="/debian-cd/7.8.0/amd64/iso-cd/"
                          # Distribution payload directory path
 site_payload="debian-7.8.0-amd64-netinst.iso"
                          # Distribution payload file(s) (space separated)
-payload_compressed=""    # "yes" if compressed ISO or rawimg payload
 requires_tty="no"        # "yes" if a serial tty is required (FreeBSD only)
 obj_srcdir=""            # Location of OS sources (uses /usr/obj) (FreeBSD only)
 

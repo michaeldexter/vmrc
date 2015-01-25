@@ -46,7 +46,6 @@ site_path="/pub/FreeBSD/releases/amd64/amd64/9.3-RELEASE/"
                          # Distribution payload directory path
 site_payload="base.txz kernel.txz"
                          # Distribution payload file(s) (space separated)
-payload_compressed=""    # "yes" if compressed ISO or rawimg payload
 requires_tty=""          # "yes" if a serial tty is required (FreeBSD only)
 obj_srcdir=""            # Location of OS sources (uses /usr/obj) (FreeBSD only)
 

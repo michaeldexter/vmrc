@@ -17,11 +17,7 @@
 ############################################################ INFORMATION
 #
 # Title: virtual machine rc script instructions
-<<<<<<< HEAD
 # Version: v.0.8.8
-=======
-# Version: v.0.8.6
->>>>>>> parent of 29c8537... v.0.8.7 MetBSD Edition - Lots of changes
 #
 # vmrc usage instructions and developer notes
 #
@@ -32,7 +28,6 @@ Thank you for trying vmrc, the Virtual Machine rc script.
 Latest development snapshot: http://vmrc.bsd.lv/vmrc-snapshot.tar
 GitHub repository: https://github.com/michaeldexter/vmrc
 
-<<<<<<< HEAD
 NOTABLE CHANGES FROM .0.8.7 to .0.8.8
 
 * multiple bridge support in vm.conf or leave plank for a pre-configured bridge
@@ -48,8 +43,6 @@ NOTABLE CHANGES	from .0.8.6 to .0.8.7
 * Download payload tasting for compression
 * See the GitHub visual diffs
 
-=======
->>>>>>> parent of 29c8537... v.0.8.7 MetBSD Edition - Lots of changes
 .0.8.6: Added ACPI shutdown
 .0.8.5: Enabled OpenBSD reboot. Updated flashrd version
 .0.8.4: Bug fixes

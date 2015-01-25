@@ -50,7 +50,6 @@ site_path="/pub/OpenBSD/5.6/amd64/"
                          # Distribution payload directory path
 site_payload="install56.iso"
                          # Distribution payload file(s) (space separated)
-payload_compressed=""    # "yes" if compressed ISO or rawimg payload  
 requires_tty=""          # "yes" if a serial tty is required (FreeBSD only)
 obj_srcdir=""            # Location of OS sources (uses /usr/obj) (FreeBSD only)
 

@@ -43,7 +43,7 @@ case $( file -bi $1 ) in
 	;;
 		"application/x-zip; charset=binary") echo .zip
 	;;
-	*) echo Unrecognized file format
+	*) echo "Uncompressed" # This might want to be a return value
 # FYI images are application/octet-stream; charset=binary
 esac
 }

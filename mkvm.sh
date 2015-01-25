@@ -269,16 +269,19 @@ echo Expanding or copying the payload as necessary
 # libarchive should do this but not the tar front end
 # Consider fetch size check over a given size to distinguish
 # text file answers, errors, redirects...
-# Eodes fetch handle redirect output? ( earlier download above )
+# Does fetch handle redirect output? ( earlier download above )
 
 if [ "$install_method" = "isoimg" -o "$install_method" = "rawimg" ]; then
 
 echo Checking if $host_distdir/$site_path/$site_payload is compressed
 filetype=$( f_filetype $host_distdir/$site_path/$site_payload )
-echo Download appears to be type $filetype
+echo Download appears to be type $filetype according to f_filetype
+
+payload_compressed="" # Override if set in an old-style template
 
 case $filetype in
 	.bz2) echo Handling .bz2
+		payload_compressed="YES"
 # Why does this test sometimes work with ! and sometimes not?
 		if [ ! -f $host_distdir/$site_path/$site_payload.unc ]; then
 			echo Expanding $host_distdir/$site_path/$site_payload \
@@ -290,6 +293,7 @@ case $filetype in
 		fi
 	;;
 	.Z) echo Handling .Z
+		payload_compressed="YES"
 # Why does this test sometimes work with ! and sometimes not?
 		if [ ! -f $host_distdir/$site_path/$site_payload.unc ]; then
 			echo Expanding $host_distdir/$site_path/$site_payload \
@@ -301,6 +305,7 @@ case $filetype in
 		fi
 	;;
 	.gz) echo Handling .gz
+		payload_compressed="YES"
 # Why does this test sometimes work with ! and sometimes not?
 		if [ ! -f $host_distdir/$site_path/$site_payload.unc ]; then
 			echo Expanding $host_distdir/$site_path/$site_payload \
@@ -312,6 +317,7 @@ case $filetype in
 		fi
 	;;
 	.xz) echo Handling .xz
+		payload_compressed="YES"
 # Why does this test sometimes work with ! and sometimes not?
 		if [ ! -f $host_distdir/$site_path/$site_payload.unc ]; then
 			echo Expanding $host_distdir/$site_path/$site_payload \
@@ -323,6 +329,7 @@ case $filetype in
 		fi
 	;;
 	.zip) echo Handling .zip
+		payload_compressed="YES"
 # Why does this test sometimes work with ! and sometimes not?
 		if [ ! -f $host_distdir/$site_path/$site_payload.unc ]; then
 			echo Expanding $host_distdir/$site_path/$site_payload \
@@ -333,34 +340,47 @@ case $filetype in
 			rm -rf $host_vmdir/$vm_name/$vm_name ; exit 1 ; }
 		fi
 	;;
-	*) echo Image does not appear to be compressed
+	Uncompressed)
+		echo $host_distdir/$site_path/$site_payload not compressed
+		payload_compressed="NO"
+# A wildcard is somewhat pointless as we are relying on our own f_filetype
 esac
+
+# FAILURE: We're looking for .unc not .iso and what not
+# Done with downloading and decompressing the ISO or image
+# Do we end with .iso or .unc?
+
+ending=""
+if [ $payload_compressed = "YES" ]; then
+	ending=".unc"
+fi
 
 case $install_method in
 	isoimg)
-		imagecommand="ln -sf"
-		ending=.iso
-	;;
-	rawimg)
-		imagecommand="cp"
-		ending=.img
+		echo Linking $host_distdir/$site_path/${site_payload}$ending \
+		to $host_vmdir/$vm_name/${vm_name}.iso 
+		ln -sf $host_distdir/$site_path/${site_payload}$ending \
+			$host_vmdir/$vm_name/${vm_name}.iso ||
+			{ echo Image failed to copy or link. Deleting VM ; \
+			rm -rf $host_vmdir/$vm_name/$vm_name ; exit 1 ; }
+        ;;
+        rawimg)
+		echo Linking $host_distdir/$site_path/${site_payload}$ending \
+		to $host_vmdir/$vm_name/${vm_name}.img
+		cp -p $host_distdir/$site_path/${site_payload}$ending \
+			$host_vmdir/$vm_name/${vm_name}.img ||
+			{ echo Image failed to copy or link. Deleting VM ; \
+			rm -rf $host_vmdir/$vm_name/$vm_name ; exit 1 ; }
 esac
-
-echo Linking or Copying $host_distdir/$site_path/$site_payload.unc into place
-eval $imagecommand $host_distdir/$site_path/$site_payload.unc \
-$host_vmdir/$vm_name/$vm_name$ending ||
-	{ echo Image failed to copy or link. Exiting ; \
-		rm -rf $host_vmdir/$vm_name/$vm_name ; exit 1 ; }
 
 # Consider text/html; charset=us-ascii for redirects and errors
 # We could check return values but will check for the desired result
 
-if [ ! -f $host_vmdir/$vm_name/$vm_name$ending ]; then
+if [ -f $host_vmdir/$vm_name/$vm_name$ending ]; then
 	echo
 	echo $vm_name$ending Failed to extract or copy. Exiting
 	exit 1
 fi
-
 
 if [ "$install_method" = "rawimg" ]; then # Could also check if FreeBSD
 # This may apply to other OS's at some point
@@ -421,7 +441,10 @@ case $install_method in
 		echo
 		echo You can boot your VM with:
 		echo
-		echo service vm onestart $vm_name
+		echo service vm oneload $vm_name
+		echo service vm oneboot $vm_name
+		echo
+		echo Set a detached console to use service vm onestart $vm_name
 		echo
 		exit 0
         ;;

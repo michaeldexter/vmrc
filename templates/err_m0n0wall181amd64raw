@@ -46,7 +46,6 @@ site_path="/pub/m0n0wall/"
                          # Distribution payload directory path
 site_payload="generic-pc-serial-1.8.1.img"
                          # Distribution payload file(s) (space separated)
-payload_compressed=""    # "yes" if compressed ISO or rawimg payload
 requires_tty=""          # "yes" if a serial tty is required (FreeBSD only)
 obj_srcdir=""            # Location of OS sources (uses /usr/obj) (FreeBSD only)
 

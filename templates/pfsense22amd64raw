@@ -17,6 +17,7 @@ vm_devices=""            # Additional attached full-path disk images or devices
 # bridge in vm.conf or on the host and "MAC" is an optional MAC address
 # MAXIMUM 8 NICs: nic0 through nic7 as we depend on PCI slot numbers
 nic0="tap bridge0"       # i.e. "tap bridge0" "vmnet bridge1 00:99:3d:e0:e0:f6"
+nic1="tap bridge0"
 
 # VM runtime boot variables
 vm_cpus="1"              # Number of VM virtual CPUs (max 16) (required)
@@ -46,7 +47,6 @@ site_path="/mirror/downloads/"
                          # Distribution payload directory path
 site_payload="pfSense-2.2-RELEASE-2g-amd64-nanobsd.img.gz"
                          # Distribution payload file(s) (space separated)
-payload_compressed="yes" # "yes" if compressed ISO or rawimg payload
 requires_tty=""          # "yes" if a serial tty is required (FreeBSD only)
 obj_srcdir=""            # Location of OS sources (uses /usr/obj) (FreeBSD only)
 
