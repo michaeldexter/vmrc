@@ -20,7 +20,7 @@ nic0="tap bridge0"       # i.e. "tap bridge0" "vmnet bridge1 00:99:3d:e0:e0:f6"
 
 # VM runtime boot variables
 vm_cpus="1"              # Number of VM virtual CPUs (max 16) (required)
-vm_ram="2048"            # VM RAM Allocation in MB (required)
+vm_ram="1024"            # VM RAM Allocation in MB (required)
 vm_console="stdio"       # "stdio", "nmdm", "tmux" or "screen"
 virtio_type="ahci-hd"    # "ahci-hd" or "virtio-blk" (required)
 
@@ -39,12 +39,12 @@ img_grub_r=""            # VM device where to find grub.cfg i.e. -r hd0,msdos1
 # Provisioning Variables
 vm_dev_size=""           # Disk image size in M or G for non-disk image install
 install_method="rawimg"  # "rawimg", "isoimg", "distset" or "obj"
-install_site="http://heanet.dl.sourceforge.net"
+install_site="http://mfsbsd.vx.sk"
                          # Distribution payload site i.e. ftp://ftp.freebsd.org
 #install_site="file://"  # Local payload option once downloaded (choose one)
-site_path="/project/nas4free/NAS4Free-9.2.0.1/9.2.0.1.972/"
+site_path="/files/images/10/amd64/"
                          # Distribution payload directory path
-site_payload="NAS4Free-x64-embedded-9.2.0.1.972.img"
+site_payload="mfsbsd-10.1-RELEASE-amd64.img"
                          # Distribution payload file(s) (space separated)
 requires_tty=""          # "yes" if a serial tty is required (FreeBSD only)
 obj_srcdir=""            # Location of OS sources (uses /usr/obj) (FreeBSD only)
@@ -62,5 +62,4 @@ vm_password=""           # VM password (clear text for now)
 
 # Comments:
 
-# This disk image has a compressed root filesystem that would require 
-# extraction, tty configuration and reconstitution
+# Do we want mfsbsd-se-10.1-RELEASE.amd64.img ?
