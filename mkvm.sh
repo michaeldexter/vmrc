@@ -359,13 +359,14 @@ case $install_method in
 	isoimg)
 		echo Linking $host_distdir/$site_path/${site_payload}$ending \
 		to $host_vmdir/$vm_name/${vm_name}.iso 
+# Alternative: cp -p
 		ln -sf $host_distdir/$site_path/${site_payload}$ending \
 			$host_vmdir/$vm_name/${vm_name}.iso ||
 			{ echo Image failed to copy or link. Deleting VM ; \
 			rm -rf $host_vmdir/$vm_name/$vm_name ; exit 1 ; }
         ;;
         rawimg)
-		echo Linking $host_distdir/$site_path/${site_payload}$ending \
+		echo Copying $host_distdir/$site_path/${site_payload}$ending \
 		to $host_vmdir/$vm_name/${vm_name}.img
 		cp -p $host_distdir/$site_path/${site_payload}$ending \
 			$host_vmdir/$vm_name/${vm_name}.img ||
