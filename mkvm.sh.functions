@@ -19,7 +19,7 @@
 ############################################################ INFORMATION
 # 
 # Title: make VM script function library
-# Version: v.0.8.7
+# Version: v.0.8.8
 #
 # Functions used by the mkvm.sh Virtual Machine provisioning script
 #
@@ -104,14 +104,20 @@ f_wipe_dev() ## $1 dev ## - Wipe everything possible from a device
 
 # PARTITIONING
 
-# How about a check-alignment function?
 # Optional data partitions would require sizes for all
 
-# Steps:
+# Verify if a device has aligned gpart partitions
+f_check_gpt_alignment() ## $1 dev ##
+{
+	exitcode="0" # Mathematical answer that doubles as a return value
 
-# Create layout
-# Create boot slice/partition
-# Create data slice/partition and newfs it (bootable for mbr)
+for alignment in $( gpart backup $1 | tail -n +2 | cut -d " " -f 3 ); do
+        result=$( echo "$alignment % 8" | bc )
+        exitcode=$(( $exitcode+$result )) # Add any non-zero results to total
+done
+
+return $exitcode
+}
 
 # Create a traditional fdisk/MBR layout
 f_fdisk_mbr_layout_preflight() ## $1 dev ##
@@ -992,7 +998,7 @@ f_set_password_preflight() ##  ##
 
 f_set_password() ## $1 password $2 mount point ##
 {
-	echo $1 | pw -V ${2}/etc/ usermod root -h 0
+	echo "$1" | pw -V ${2}/etc/ usermod root -h 0
 }
 
 f_set_password_debug() ## $1 mount point ##

@@ -6,8 +6,7 @@ Known vmrc Issues
 4. FreeBSD creates superflous tap0 devices and runs dhcp on them
 5. Templates using "Latest" rawimg images will not know to update if they change
 6. cu processes on idle nmdm devices can go nuts
-7. mkvm has a test to check for payload.enc that seems to ping pong between
-   needing ! and not.
+7. "load" gives a grub prompt with unconfigured HDs. Could be more elegant?
 
 Known Feature Requests
 

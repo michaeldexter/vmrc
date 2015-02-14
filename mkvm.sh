@@ -185,7 +185,7 @@ case $vm_dev_type in
 		if [ ! -f $host_vmdir/$vm_name/${vm_name}.img ]; then
 		echo
 		echo Truncating $host_vmdir/$vm_name/${vm_name}.img
-# BUG: Add a dd option because truncated files to not tar well
+# BUG: Add a dd option because truncated files to not tar or cp well, rsync OK
 		truncate -s $vm_dev_size $host_vmdir/$vm_name/${vm_name}.img
 		echo
 		echo Listing the contents of $host_vmdir/$vm_name/
@@ -436,7 +436,6 @@ f_checkconflicts $host_vmdir
 # Note: Who is shipping uncompressed ISOs?
 
 
-
 case $install_method in
         rawimg)
 		echo
@@ -527,7 +526,12 @@ f_${vm_dev_util}_${vm_dev_layout}_layout_preflight $vm_device
 f_${vm_dev_util}_${vm_dev_layout}_layout $vm_device
 f_${vm_dev_util}_${vm_dev_layout}_layout_debug $vm_device
 
-# pointless here if a zvol move to function, need to test either way
+echo
+echo Running f_check_gpt_alignment $vm_device
+f_check_gpt_alignment $vm_device && echo Partitions are aligned
+# BUG: Make conditional, report if not alighed
+
+# pointless here if a zvol. Move to function, need to test either way
 echo
 echo Running file on $host_vmdir/$vm_name/${vm_name}.img
 file $host_vmdir/$vm_name/${vm_name}.img
