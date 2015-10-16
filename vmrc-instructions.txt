@@ -17,16 +17,47 @@
 ############################################################ INFORMATION
 #
 # Title: virtual machine rc script instructions
-# Version: v.0.8.8
+# Version: v.0.9
 #
 # vmrc usage instructions and developer notes
 #
 ########################################################################
 
+        "vmrc is quite meh" - kerio
+
+        "Your development model is problematic" - xmj
+
+	"Looks dead (And I shouldn't have to ask if is)." -dvl
+
 Thank you for trying vmrc, the Virtual Machine rc script.
 
 Latest development snapshot: http://vmrc.bsd.lv/vmrc-snapshot.tar
 GitHub repository: https://github.com/michaeldexter/vmrc
+
+NOTABLE CHANGES FROM .0.8.9 TO .0.9
+
+The "You suck because you don't volunteer enough time to work on this" Edition.
+
+* Significant rewrite of vm for modular container support
+* Now relies on executing generated scripts for simplicity and clarity
+* Added "Enabled/disabled" variable
+* Added Xen VM support
+* Added multiple VM disk support
+* Added FreeBSD memstick install support
+* Added vnc and rdp xconsole support
+* Added vmrcd (crazy-) simple web interface (Read /vmrc/vmrcd for details)
+* Added UEFI support
+* Removed zvols, mount, multiple nics/bridges temporarily
+
+THE REMAINDER OF THIS DOCUMENT HAS NOT YET BEEN UPDATED TO REFLECT THE CHANGES
+
+NOTABLE CHANGES FROM .0.8.8 TO .0.8.9
+
+* Most, if not all pull requests integrated
+* vm.conf will ship with "host_*" variables set to "/vmrc/". Adjust as needed
+* template updates
+* check-templates.sh now renames templates with a _fail suffix
+* master_template "site*" variables moved up for easier updating
 
 NOTABLE CHANGES FROM .0.8.7 to .0.8.8
 
@@ -119,23 +150,31 @@ library of functions and templates.
 zfs-boot components or a recent snapshot.
 
 
+### PHILOSOPHY ###
+
+"Go away or I will replace you with a very small shell script."
+
+Given the countless large "cloud" options available, this project intends to be
+the bare minimum /bin/sh code to manage virtual machines.
+
+
 ### OVERVIEW ###
 
 This tool has come a long way from a 2005 jail(8) provisioning and management
-script to a 2012 FreeBSD 9.0 bhyve build script to a series of sequential
+script to a 2012 FreeBSD 9.0 bhyve beta build script to a series of sequential
 FreeBSD 10.* VM provisioning and management scripts.
 
 Because bhyve is only the latest multiplicity solution on FreeBSD, this
-rc script includes basic jail and QEMU support and could include VirtualBox,
-chroot, simh and GXemul support. Of these, QEMU is intended to help prepare
-OSs that require VirtIO and console adjustments prior to booting under bhyve.
+rc script includes multiple container support including bhyve and Xen,
+and aims to include jail, qemu, VirtualBox, simh and GXemul support.
 
 
 ### REQUIREMENTS ###
 
-The Intel or AMD "POPCNT" (EPT) processor feature is required for bhyve.
+The Intel or AMD "POPCNT" (EPT) processor feature is required for bhyve and Xen.
 
-vmrc requires the bhyve hypervisor, available in FreeBSD and newer.
+A working IOMMU is required for bhyve PCI pass-through (not implemented in vmrc)
+and Xen.
 
 
 ### CHEAT SHEET ###
@@ -145,8 +184,8 @@ the paths to suit your system.
 
 Verify your host_nic and optional host_zpool in /usr/local/etc/vm.conf
 
-The mkvm.sh script provisions Virtual Machines based on the templates in
-/usr/local/vmrc/templates
+The /vmrc/mkvm.sh script provisions Virtual Machines based on the templates in
+/vmrc/templates
 
 mkvm.sh can be used in a captive manner with:
 
@@ -154,18 +193,21 @@ sh mkvm.sh
 
 or by passing in a template name and a VM name. i.e.:
 
-sh mkvm.sh fbsd10amd64_img_gpt_ufs_dist freebsd
+sh mkvm.sh fbsd11amd64iso freebsd 
 
 which will create a VM named "freebsd#" where "#" is a unique, auto-generated
 VM ID number such as "0", resulting in a VM named "freebsd0" in:
 
-/usr/local/vmrc/vm/freebsd0
+/vmrc/vm/fbsdbsd0
 
 The template naming is based on its configuration variables. In this example:
 
-fbsd10: FreeBSD 10 Operating System
+fbsd11: FreeBSD 11 Operating System
 amd64:  AMD64 Architecture
-img:    Disk Image-based Storage
+iso:    ISO-based installation
+
+Not used in this example:
+
 gpt:    GPT Partitioned Filesystem
 ufs:    UFS Formatted Filesystem
 dist:   Binary Distribution Set Installation Method
@@ -178,45 +220,26 @@ CONFLICTING: vm0, freebsd0 and openbsd0 (trailing ID number must be unique)
 
 As of version 0.7.1, mkvm.sh will check for and report ID conflicts
 
-
 Once a VM is provisioned, it is managed with the "vm" rc script, hence "vmrc".
 
-All templates are set to a captive, stdio console which requires them to be
-manually loaded and booted until a detached console is set in the .conf file.
+All templates are currently set to a tmux console.
 
 To load and boot a new VM:
 
-/usr/local/etc/rc.d/vm oneload freebsd0
-/usr/local/etc/rc.d/vm oneboot freebsd0
-
-Once a detached console and vm is enabled in /usr/local/etc/rc.conf :
-
-/usr/local/etc/rc.d/vm start freebsd0
-
-NB! You must set a "tmux" or "screen" console type for the "start" directive
-to work and install ether "tmux" or "screen".
+service vm onestart freebsd0 ; service vm oneattach freebsd0
 
 
-VMs can always be loaded, booted and stopped in a linear manner for debugging:
+If the virtual machine cannot be accessed but appears to be hung, it can be
+stopped with:
 
-/usr/local/etc/rc.d/vm load freebsd0
-/usr/local/etc/rc.d/vm boot freebsd0
-/usr/local/etc/rc.d/vm stop freebsd0
+service vm onestop freebsd0
 
 
-### ISO MODE ###
+### INSTALL MODE ###
 
-Templates with "iso" in their names are installed by booting to ISO images
-and formatting their storage devices with the OS's native installer. These are  
-provisioned by booting in "ISO" mode:
-
-service vm iso openbsd4
-
-Once the OS is installed from ISO, these can be booted with the standard
-'start' directive:
-
-service vm start openbsd4
-
+Templates ending with "iso" or "img" are installed by booting to the ISO or
+"memstick" image and formatting the storage devices with the OS's native
+installer.
 
 ### GRUB MODE ###
 
@@ -301,7 +324,7 @@ Once installed, the CentOS 7 grub.cfg exists in:
 
 (hd0,msdos1)/grub2/grub.cfg
 
-The grub.cfg garguments to use this would be:
+The grub.cfg arguments to use this would be:
 
 /usr/local/sbin/grub-bhyve -r hd0,msdos1 -d /grub2/ \
 -m /usr/local/vmrc/vm/centos7amd64iso0/device.map -M 1024 centos7amd64iso0
@@ -321,14 +344,7 @@ Note that GNU/Linux paths may vary depending of the type of filesystem you use.
 grub-bhyve kfreebsd support is experimental.
 
 
-### DIRECTIVE USAGE ###
-
-The 'start', 'stop' and 'status' will act on all VMs in /usr/local/vm/ or
-a specified VM i.e.:
-
-service vm onestop                (stop all VMs)
-service vm onestatus freebsd0     (status for one VM)
-
+!!! SEMI-OUTDATED FROM HERE !!!
 
 ### DIRECTIVES ###
 
@@ -345,34 +361,23 @@ VM-specific commands (i.e. /etc/rc.d/vm attach vm0)
 
 start		Load and boot VMs
 stop		kill and 'destroy' VMs
-load		Load a VM with bhyveload(8) or grub-bhyve()
-boot		Boot a VM with bhyve(8)
-destroy		'destroy' a VM
-restart		Run the stop and start functions on a VM
 attach		Attach to a VM's nmdm serial port, tmux or screen session
-debug		List bhyvectl(8) --get-all output
-iso		Format storage device, fetch an ISO image, boot to it
+xattach		Attach to a VM's RDP or VNC session
 grub		Launch grub with the VM's disk and ISO images
-mount		fsck(8) and mount(8) a FreeBSD VM disk image (UFS only)
-umount		umount(8) a FreeBSD VM disk image
-jail		Launch a FreeBSD VM's disk image with jail(8)
-delete		Delete a VM and its images and directory tree
 
 
 ### VM LAYOUT ###
 
-/usr/local/vmrc/distributions/  OS distribution sets and ISOs
-/usr/local/vmrc/templates/      VM templates
-/usr/local/vmrc/vm/vm#/vm#.conf    VM config file
-/usr/local/vmrc/vm/vm#/vm#.img     VM raw disk image (format or copy in)
-/usr/local/vmrc/vm/vm#/vm#.iso     Link to bootable ISO image (fetch or copy in)
-/usr/local/vmrc/vm/vm#/mnt/        VM mount point for raw disk image
-/usr/local/vmrc/vm/vm#/vm#.log     VM command log
+/vmrc/distributions/		OS distribution sets and ISOs
+/vmrc/templates/		VM templates
+/vmrc/vm/vm#/vm#.conf		VM config file
+/vmrc/vm/vm#/diskN.img		VM raw disk image (format or copy in)
+/vmrc/vm/vm#/install.iso|img	Link to bootable ISO image (fetch or copy in)
 
-The ifconfig_cmd.sh, bhyveload_cmd.sh and bhyve_cmd.sh shell scripts will also
-be created in /usr/local/vmrc/vm/vm#/ at boot time and can be run independently
-of vmrc for testing purposes. Note that these will not create the network
-bridge or perform any VM cleanup.
+#The ifconfig_cmd.sh, bhyveload_cmd.sh and bhyve_cmd.sh shell scripts will also
+#be created in /usr/local/vmrc/vm/vm#/ at boot time and can be run independently
+#of vmrc for testing purposes. Note that these will not create the network
+#bridge or perform any VM cleanup.
 
 
 ### CONSOLES ###

@@ -2,7 +2,7 @@
 # 
 ################################################################ LICENSE
 #
-# Copyright (c) 2012-2014 Michael Dexter <editor@callfortesting.org>
+# Copyright (c) 2012-2015 Michael Dexter <editor@callfortesting.org>
 # 
 # Permission to use, copy, modify, and distribute this software for any
 # purpose with or without fee is hereby granted, provided that the above
@@ -19,28 +19,41 @@
 ############################################################ INFORMATION
 #
 # Title: Check Templates Script
-# Version: v.0.8
+# Version: v.0.9
 
-# This is a simple script that use 'wget -q --spider' to verify that all of
+# This is a simple script that used 'wget -q --spider' to verify that all of
 # the downloadable images in the templates are still accessible.
+# fetch(1) has replated wget in this script
 
-# Requires wget - easily replaced with fetch -s, output supression and return check
+host_distdir="/vmrc/templates/"
 
-host_distdir="/usr/local/vmrc/templates/"
+for template in "$host_distdir"/*; do
 
-for link in "$host_distdir"/*; do
-
-	. $link
+	. $template
+	echo "Checking template $template"
 
 	case $install_method in
 	rawimg|isoimg)
+# Note that we have URLs: ftp://ftp.freebsd.org...
+#		echo "Running host $install_site just in case"
+#		host $install_site
+		echo "Running fetch -s $install_site/$site_path/$site_payload"
 		fetch -s $install_site/$site_path/$site_payload || \
-		echo "$link: $install_site/$site_path/$site_payload missing!"
+		{ echo "$template: $install_site/$site_path/$site_payload missing!"
+		echo "Adding _fail suffix to $template"
+                mv $template ${template}_fail
+		}
 	;;
 	distset)
 	for distset in $site_payload; do
+#		echo "Running host $install_site just in case"
+#		host $install_site
+		echo "Running fetch -s $install_site/$site_path/$site_payload"
 		fetch -s $install_site/$site_path/$distest || \
-		echo "$link: $install_site/$site_path/$site_payload missing!"
+		{ echo "$template: $install_site/$site_path/$site_payload missing!"
+		echo "Adding _fail suffix to $template"
+		mv $template ${template}_fail
+		}
 	done
 	;;
 	obj)

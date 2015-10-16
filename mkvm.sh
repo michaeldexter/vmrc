@@ -19,7 +19,7 @@
 ############################################################ INFORMATION
 #
 # Title: make VM script
-# Version: v.0.8.8
+# Version: v.0.9
 #
 # Script to provision FreeBSD Virtual Machines for use with vmrc
 #
@@ -121,7 +121,7 @@ fi
 
 echo
 echo Verifying if the VM already exists and making
-echo $host_vmdir/$vm_name/mnt
+#echo $host_vmdir/$vm_name/mnt
 if [ -f $host_vmdir/$vm_name ]; then
 	echo $vm_name already exists. Exiting.
 	exit 1
@@ -142,7 +142,6 @@ echo
 echo Listing the contents of $host_vmdir/$vm_name/
 ls $host_vmdir/$vm_name
 
-# Ideally we do this after the malloc vm_device is added to the template 
 if [ $# = 0 ]; then # Interactive mode
 	echo
 	echo Do you want to edit the configuration file in vi? y or n
@@ -160,6 +159,7 @@ if [ $# = 0 ]; then # Interactive mode
 fi
 
 echo
+#NB! Note the f_readconf checks in vm 0.9
 echo Reading the $host_vmdir/$vm_name/${vm_name}.conf config file
 		. $host_vmdir/$vm_name/${vm_name}.conf || \
 		echo $vm_name config file failed to source. Exiting # ; exit 1
@@ -167,56 +167,72 @@ echo Reading the $host_vmdir/$vm_name/${vm_name}.conf config file
 ### STEP TWO : VM Storage Preparation ###
 
 echo
-echo Preparing VM storage
+echo Preparing VM disks
 
-if [ ! "$install_method" = "rawimg" ]; then
-case $vm_dev_type in
+
+
+
+
+if [ "$install_method" = "raw" ]; then
+	disk_id="1" # Skip disk0.img, which will be the raw disk image
+else
+	disk_id="0"
+fi
+
+foo="disk${disk_id}_type" ; eval disk_type=\$$foo
+foo=""
+
+# Same loop at vm to loop over all disks in the config file
+while [ $disk_type ]; do # While a valid disk_(type) exists while incrementing
+
+case $disk_type in
 	device) # Use the device specified in the configuration file
+# NB! raw image will want to be disk0.img (see below)
 		 return
 	;;
-	malloc) # Create the malloc device
-		echo Creating the malloc device
-		md_device=$( mdconfig -a -t malloc -s $vm_dev_size )
-		echo Running mdconfig -lv
-		mdconfig -lv
-		sed -i '' -e "s/vm_device=\"\"/vm_device=\"${md_device}\"/" ${host_vmdir}/${vm_name}/${vm_name}.conf
-	;;	
 	img) # Create a disk image
-		if [ ! -f $host_vmdir/$vm_name/${vm_name}.img ]; then
+		if [ ! -f $host_vmdir/$vm_name/disk${disk_id}.img ]; then
 		echo
-		echo Truncating $host_vmdir/$vm_name/${vm_name}.img
+		echo Truncating $host_vmdir/$vm_name/disk${disk_id}.img
 # BUG: Add a dd option because truncated files to not tar or cp well, rsync OK
-		truncate -s $vm_dev_size $host_vmdir/$vm_name/${vm_name}.img
+# Fixed in HEAD
+foo="disk${disk_id}_size" ; eval disk_size=\$$foo
+foo=""
+		truncate -s $disk_size $host_vmdir/$vm_name/disk${disk_id}.img
 		echo
 		echo Listing the contents of $host_vmdir/$vm_name/
-		ls -lh $host_vmdir/$vm_name/${vm_name}.img
-			if [ ! -f $host_vmdir/$vm_name/${vm_name}.img ]; then
+		ls -lh $host_vmdir/$vm_name/disk${disk_id}.img
+			if [ ! -f $host_vmdir/$vm_name/disk${disk_id}.img ]; then
 				echo Disk image failed to create. Exiting
 				exit 1
 			fi
 		fi
 	;;
 	zvol) # Create a zvol
-		if [ ! -e /dev/zvol/$host_zpool/$vm_name ]; then
-			echo Creating zvol $host_zpool/$vm_name
-	 	zfs create -V $vm_dev_size $vm_dev_flags $host_zpool/$vm_name
-			zfs list | grep $vm_name
-		else
-			echo $host_zpool does not exist. Exiting
-			echo Compare your zpool name to /usr/local/etc/vm.conf
-			exit 1
-		fi
+echo "Oh, let's rethink this"
+exit 1
+#		if [ ! -e /dev/zvol/$host_zpool/$vm_name ]; then
+#			echo Creating zvol $host_zpool/$vm_name
+#	 	zfs create -V $vm_dev_size $vm_dev_flags $host_zpool/$vm_name
+#			zfs list | grep $vm_name
+#		else
+#			echo $host_zpool does not exist. Exiting
+#			echo Compare your zpool name to /usr/local/etc/vm.conf
+#			exit 1
+#		fi
 	;;
 	*) # Something went wrong
-		echo vm_dev_type was not specified correctly. Exiting
+		echo diskN_type was not specified correctly. Exiting
 		exit 1
 		# FYI: Provisioning master_template will fail here if crawled
 esac
-fi # end install_method=rawimg test
 
+disk_id=$((disk_id+1)) # Increment $disk
+foo="disk${disk_id}_type" ; eval disk_type=\$$foo
+foo=""
+
+done # End of looping over all the disks
 # At this stage we should have a block device we can point the install at
-
-# May need to set vm_device to it? or, any mdconfig is later...
 
 
 ### STEP THREE : Fetch raw image, ISO or distribution sets ###
@@ -248,7 +264,8 @@ for distset in $site_payload; do
 
 		if [ "$fetchexit" -gt 0 ]; then
 			echo Distribution set did not fetch. Deleting
-			rm $host_distdir/$site_path$distset
+			echo "Deleting dist set and VM (pretending)"
+# NB! No we're not!
 			echo Exiting
 			exit 1
 		fi
@@ -257,7 +274,7 @@ done
 
 if [ "$fetchexit" -gt 0 ]; then # Make sure fetchexit is initialized
 	echo Distribution set did not fetch. Deleting VM
-	rm -rf $host_vmdir/$vm_name/$vm_name
+	rm -rf $host_vmdir/$vm_name
 	echo Exiting
 	exit 1
 fi
@@ -271,10 +288,12 @@ echo Expanding or copying the payload as necessary
 # text file answers, errors, redirects...
 # Does fetch handle redirect output? ( earlier download above )
 
-if [ "$install_method" = "isoimg" -o "$install_method" = "rawimg" ]; then
+# Downloadable, likely-compressed image types
+#if [ "$install_method" = "iso" -o "$install_method" = "img" -o "$install_method" = "raw" ]; then
 
 echo Checking if $host_distdir/$site_path/$site_payload is compressed
-filetype=$( f_filetype $host_distdir/$site_path/$site_payload )
+filetype=$( f_filetype "$host_distdir/$site_path/$site_payload" )
+
 echo Download appears to be type $filetype according to f_filetype
 
 payload_compressed="" # Override if set in an old-style template
@@ -356,20 +375,20 @@ if [ $payload_compressed = "YES" ]; then
 fi
 
 case $install_method in
-	isoimg)
+	iso|img)
 		echo Linking $host_distdir/$site_path/${site_payload}$ending \
-		to $host_vmdir/$vm_name/${vm_name}.iso 
-# Alternative: cp -p
+		to $host_vmdir/$vm_name/install.$isntall_method
+# Alternative: cp -p because some containers may complain
 		ln -sf $host_distdir/$site_path/${site_payload}$ending \
-			$host_vmdir/$vm_name/${vm_name}.iso ||
+			$host_vmdir/$vm_name/install.$install_method ||
 			{ echo Image failed to copy or link. Deleting VM ; \
 			rm -rf $host_vmdir/$vm_name/$vm_name ; exit 1 ; }
         ;;
-        rawimg)
+        raw)
 		echo Copying $host_distdir/$site_path/${site_payload}$ending \
-		to $host_vmdir/$vm_name/${vm_name}.img
+		to $host_vmdir/$vm_name/disk0.img
 		cp -p $host_distdir/$site_path/${site_payload}$ending \
-			$host_vmdir/$vm_name/${vm_name}.img ||
+			$host_vmdir/$vm_name/disk0.img ||
 			{ echo Image failed to copy or link. Deleting VM ; \
 			rm -rf $host_vmdir/$vm_name/$vm_name ; exit 1 ; }
 esac
@@ -383,11 +402,13 @@ if [ -f $host_vmdir/$vm_name/$vm_name$ending ]; then
 	exit 1
 fi
 
-if [ "$install_method" = "rawimg" ]; then # Could also check if FreeBSD
+if [ "$install_method" = "raw" ]; then # Could also check if FreeBSD
 # This may apply to other OS's at some point
+# NB! This $vm_device handling will no longer work
+# And, let's hope this is a relic from the past we will never face again
 echo
 echo Checking if a tty change is requested
-if [ "$requires_tty" = "yes" ]; then
+if [ "$requires_tty" = "YES" ]; then
 	echo
 	echo Attaching ${vm_name}.img for tty change
 	vm_mountpoint=$host_vmdir/$vm_name/mnt/
@@ -427,17 +448,18 @@ fi
 echo
 echo Directory structure ready and raw VM image fetched
 
-echo Checking for VM ID conflicts
-f_checkconflicts $host_vmdir
+
+# NB! Note new conflict checking and skipping code in vm
+#echo Checking for VM ID conflicts
+#f_checkconflicts $host_vmdir
 
 # Not ideal: we are extracting compressed ISOs to the VM to "preserve" our
-# mirror of upgstream downloads
+# mirror of upstream downloads
 # BUG: Need a suffix-removal routine to link uncompressed ISOs. Or put in cfg
 # Note: Who is shipping uncompressed ISOs?
 
-
 case $install_method in
-        rawimg)
+        raw)
 		echo
 		echo You can boot your VM with:
 		echo
@@ -448,7 +470,7 @@ case $install_method in
 		echo
 		exit 0
         ;;
-        isoimg)
+        iso|img)
 if [ "$vm_os_type" = "freebsd" ]; then
 		echo Note that FreeBSD ISO installations may require
 		echo this modication to /etc/ttys to boot properly:
@@ -458,7 +480,7 @@ fi
 		echo
 		echo You can boot your VM with:
 		echo
-		echo service vm oneiso $vm_name
+		echo service vm oneinstall $vm_name
 		echo
 		echo Remember to stop it with "onestop"
 		exit 0
@@ -466,7 +488,7 @@ esac # ISO/rawimage image installs are done at this point
 
 # The remainder of this script is the FreeBSD manually installation
 
-else # Middle of the large isoimg/rawimg vs. distset if statement
+else # Middle of the large iso/raw vs. distset if statement
 
 echo
 echo Verifying that we are continuing with an artisnal FreeBSD provision
@@ -475,10 +497,20 @@ if [ "$vm_os_type" = "freebsd" ]; then
 		distset) continue ;;
 		obj) continue ;;
 		iso) exit 1 ;;
-		rawimg) exit 1 ;;
-		*) echo How did you get this far? ; exit 1
+		img) exit 1 ;;
+		raw) exit 1 ;;
+		*) echo "How did you get this far?" ; exit 1
 	esac
 fi
+
+
+
+
+############# THAR BE DRAGONS ##############
+
+# NB! Note the boot_disk variable
+
+# NB! This needs work because of the vm_device change
 
 # Initialize vm_device variable
 
@@ -489,12 +521,9 @@ case $vm_dev_type in
 	device) # Use the device specified in the configuration file
 		return
 	;;
-	malloc) # Continue with the attached malloc device
-		vm_device=$md_device
-	;;
-	img) # Attach the disk image
-		vm_device=$( mdconfig -af $host_vmdir/$vm_name/${vm_name}.img ) ||
-		{ echo ${vm_name}.img failed to attach. Exiting ; exit 1 ; }
+	raw) # Attach the disk image
+	vm_device=$( mdconfig -af $host_vmdir/$vm_name/${vm_name}.img ) ||
+		{ echo "${vm_name}.img failed to attach. Exiting" ; exit 1 ; }
 	;;
 	zvol) # Use the zvol that was created
 		vm_device=zvol/$host_zpool/$vm_name
@@ -704,9 +733,10 @@ if [ "$install_method" = "distset" ]; then
 elif [ "$install_method" = "obj" ]; then
 	echo
 	echo Verifying that sources and a built world and kernel are present
-	if [ ! -f $obj_srcdir/Makefile ]; then
-		echo Sources are not present in ${obj_srcdiri}. Exiting
+	if [ ! -f $vm_objdir/Makefile ]; then
+		echo Sources are not present in ${vm_objdir}. Exiting
 		exit 1
+# NB! Rethink this: only use a custom src and obj directories
 	elif [ ! -d /usr/obj/usr ]; then
 		echo Built world not present in /usr/obj/. Exiting
 		exit 1
@@ -717,7 +747,7 @@ elif [ "$install_method" = "obj" ]; then
 
 	echo
 	echo Changing to the source directory for an obj installation
-	cd $obj_srcdir
+	cd $vm_objdir
 	echo
 	echo Running make installworld to $vm_mountpoint
 	make installworld DESTDIR=$vm_mountpoint
@@ -757,7 +787,7 @@ fi
 
 echo
 echo Checking if a tty change is requested
-if [ "$requires_tty" = "yes" ]; then
+if [ "$requires_tty" = "YES" ]; then
 	f_config_ttys_preflight $vm_name
 	f_config_ttys $vm_mountpoint
 	f_config_ttys_debug $vm_mountpoint
@@ -811,14 +841,9 @@ else
 	umount -f $vm_mountpoint
 fi
 
-if [ "$vm_dev_type" = "malloc" ]; then
-	echo
-	echo Leaving memory device $md_device attached for use
-else
-	echo
-	echo Detaching memory device $vm_device
-	mdconfig -du $vm_device
-fi
+echo
+echo Detaching memory device $vm_device
+mdconfig -du $vm_device
 
 echo
 echo Checking for VM ID conflicts
@@ -827,10 +852,9 @@ f_checkconflicts $host_vmdir
 echo
 echo You can boot your VM with:
 echo
-echo service vm oneload $vm_name
-echo service vm oneboot $vm_name
+echo service vm onestart $vm_name
 echo
 echo Set a detached console to use service vm onestart $vm_name
 
-fi # End of the large isoimg/rawimg vs. distset if statement
+fi # End of the large iso/raw vs. distset if statement
 

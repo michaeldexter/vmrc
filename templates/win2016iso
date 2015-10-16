@@ -1,16 +1,21 @@
 # Configuration template for a VM used by mkvm.sh and the vm rc script
 # mkvm.sh copies this to ~/vmrc/vm/<vmname><vmid>.conf
 
+unattend_xml=""
+license_key=""
+
 # Provisioning Variables (See FreeBSD-specific VM provisioning variables below)
-install_method=""         # "raw", "iso", "img", "distset" or "obj"
-install_site=""           # Distribution payload site i.e. ftp://ftp.freebsd.org
-#install_site="file://"   # Local payload option once downloaded (choose one)
-site_path=""              # Distribution payload directory path
-site_payload=""           # Distribution payload file(s) (space separated)
+install_method="iso"      # "raw", "iso", "img", "distset" or "obj"
+#install_site=""          # Distribution payload site i.e. ftp://ftp.freebsd.org
+install_site="file://"    # Local payload option once downloaded (choose one)
+site_path="/vmrc/isos/windows/"
+                          # Distribution payload directory path
+site_payload="en_windows_server_2012_x64_dvd_915478.iso"
+                          # Distribution payload file(s) (space separated)
 bootrom_site=""           # bhyve and QEMU bootrom payload site
 bootrom_path=""           # bootrom payload directory path
 bootrom_payload=""        # bootrom payload file
-bootrom=""                # TBD
+bootrom="-l bootrom,/vmrc/bhyve_uefi/BHYVE_UEFI_20151002.fd"
 
 # bhyve-grub Parameters
 iso_grub_cfg=""           # \n separated grub.cfg (if required by GRUB)
@@ -24,21 +29,21 @@ img_grub_r=""             # VM device where to find grub.cfg i.e. -r hd0,msdos1
 
 # VM runtime boot variables
 vm_autoboot=""            # "YES" to enable VM autoboot
-vm_cpus=""                # Number of VM virtual CPUs (max 16) (required)
-vm_ram=""                 # VM RAM Allocation in MB (required)
-vm_console=""             # "#stdio", "nmdm", "tmux" or "screen" (required)
-vm_xconsole=""            # "vnc" or "rdp"
-vm_container=""           # "bhyve", "jail", "qemu", "vbox" or "xen" (required)
-bhyve_loader=""           # "bhyveload", "grub-bhyve" or "uefi" (req. for bhyve)
+vm_cpus="2"               # Number of VM virtual CPUs (max 16) (required)
+vm_ram="4096"             # VM RAM Allocation in MB (required)
+vm_console="tmux"         # "#stdio", "nmdm", "tmux" or "screen" (required)
+vm_xconsole="rdp"         # "vnc" or "rdp"
+vm_container="bhyve"      # "bhyve", "jail", "qemu", "vbox" or "xen" (required)
+bhyve_loader="uefi"       # "bhyveload", "grub-bhyve" or "uefi" (req. for bhyve)
 bhyve_hostbridge=""       # "amd_" for the AMD hostbridge (required for OpenBSD)
-bhyve_flags=""            # Additional bhyve(8) flags (-w is common on Linux)
+bhyve_flags="-w"          # Additional bhyve(8) flags (-w is common on Linux)
 
 # VM Disks named disk0, disk1, disk2 etc.
 
 vm_boot_disk="disk0"      # Equivalent to BIOS boot disk selection
 
-disk0_virtio=""           # "ahci-hd" or "virtio-blk" (required)
-disk0_type=""             # dev, img, zvol, iscsi or nfs (required)
+disk0_virtio="ahci-hd"    # "ahci-hd" or "virtio-blk" (required)
+disk0_type="img"          # dev, img, zvol, iscsi or nfs (required)
                           # Set "img" here for raw image installation method
 disk0_device=""           # Full path to existing device or zvol
 disk0_size=""             # Disk image or zvol size in M or G if provisioned

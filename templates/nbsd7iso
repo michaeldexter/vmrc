@@ -2,34 +2,41 @@
 # mkvm.sh copies this to ~/vmrc/vm/<vmname><vmid>.conf
 
 # Provisioning Variables (See FreeBSD-specific VM provisioning variables below)
-install_method=""         # "raw", "iso", "img", "distset" or "obj"
-install_site=""           # Distribution payload site i.e. ftp://ftp.freebsd.org
+install_method="iso"      # "raw", "iso", "img", "distset" or "obj"
+install_site="ftp://iso.netbsd.org"
+                          # Distribution payload site i.e. ftp://ftp.freebsd.org
 #install_site="file://"   # Local payload option once downloaded (choose one)
-site_path=""              # Distribution payload directory path
-site_payload=""           # Distribution payload file(s) (space separated)
+site_path="/pub/NetBSD/NetBSD-7.0/amd64/installation/cdrom/"
+                          # Distribution payload directory path
+site_payload="boot-com.iso"
+                          # Distribution payload file(s) (space separated)
 bootrom_site=""           # bhyve and QEMU bootrom payload site
 bootrom_path=""           # bootrom payload directory path
 bootrom_payload=""        # bootrom payload file
 bootrom=""                # TBD
 
 # bhyve-grub Parameters
-iso_grub_cfg=""           # \n separated grub.cfg (if required by GRUB)
-iso_grub_d=""             # ISO mode grub-bhyve -d directive
+iso_grub_cfg="knetbsd -h -r cd0a (cd0)/netbsd\nboot"
+                          # \n separated grub.cfg (required for GRUB ISO boot)
+iso_grub_d="-d $host_vmdir/$vm_name"
+                          # ISO mode grub-bhyve -d directive
                           # "-d $host_vmdir/$vm_name" for hostfs or "-d /grub/"
 iso_grub_r=""             # VM device where to find grub.cfg i.e. -r cd0,msdos1
-img_grub_cfg=""           # \n separated grub.cfg (if required by GRUB)
-img_grub_d=""             # IMG mode grub-bhyve -d directive 
+img_grub_cfg="knetbsd -h -r wd0a (hd0,netbsd1)/netbsd\nboot"
+                          # \n separated grub.cfg (required for GRUB img boot)
+img_grub_d="-d $host_vmdir/$vm_name"
+                          # IMG mode grub-bhyve -d directive 
                           # "-d $host_vmdir/$vm_name" for hostfs or "-d /grub/"
 img_grub_r=""             # VM device where to find grub.cfg i.e. -r hd0,msdos1
 
 # VM runtime boot variables
 vm_autoboot=""            # "YES" to enable VM autoboot
-vm_cpus=""                # Number of VM virtual CPUs (max 16) (required)
-vm_ram=""                 # VM RAM Allocation in MB (required)
-vm_console=""             # "#stdio", "nmdm", "tmux" or "screen" (required)
+vm_cpus="2"               # Number of VM virtual CPUs (max 16) (required)
+vm_ram="1024"             # VM RAM Allocation in MB (required)
+vm_console="tmux"         # "#stdio", "nmdm", "tmux" or "screen" (required)
 vm_xconsole=""            # "vnc" or "rdp"
-vm_container=""           # "bhyve", "jail", "qemu", "vbox" or "xen" (required)
-bhyve_loader=""           # "bhyveload", "grub-bhyve" or "uefi" (req. for bhyve)
+vm_container="bhyve"      # "bhyve", "jail", "qemu", "vbox" or "xen" (required)
+bhyve_loader="grub-bhyve" # "bhyveload", "grub-bhyve" or "uefi" (req. for bhyve)
 bhyve_hostbridge=""       # "amd_" for the AMD hostbridge (required for OpenBSD)
 bhyve_flags=""            # Additional bhyve(8) flags (-w is common on Linux)
 
@@ -37,11 +44,11 @@ bhyve_flags=""            # Additional bhyve(8) flags (-w is common on Linux)
 
 vm_boot_disk="disk0"      # Equivalent to BIOS boot disk selection
 
-disk0_virtio=""           # "ahci-hd" or "virtio-blk" (required)
-disk0_type=""             # dev, img, zvol, iscsi or nfs (required)
+disk0_virtio="ahci-hd"    # "ahci-hd" or "virtio-blk" (required)
+disk0_type="img"          # dev, img, zvol, iscsi or nfs (required)
                           # Set "img" here for raw image installation method
 disk0_device=""           # Full path to existing device or zvol
-disk0_size=""             # Disk image or zvol size in M or G if provisioned
+disk0_size="2G"           # Disk image or zvol size in M or G if provisioned
 disk0_fs=""               # "ufs" or "zfs" if provisioned or fsck'd with FreeBSD
 #disk0_fsck_on_boot=""    # fsck VM boot device on boot
 #disk0_zfs_flags=""       # ZFS features "-d -o feature@async_destroy=enabled"

@@ -19,7 +19,7 @@
 ############################################################ INFORMATION
 #
 # Title: virtual machine rc script installation script
-# Version: v.0.7
+# Version: v.0.9
 #
 # Verbose script to install the vmrc rc script and supporting files
 #
@@ -30,21 +30,21 @@
 ########################################################################
 
 # Keep in sync with /usr/local/vm.conf
-host_vmroot="/usr/local/vmrc/"   # Directory for all vmrc components
-host_vmdir="/usr/local/vmrc/vm/" # VM configurations, images and mount points
-host_distdir="/usr/local/vmrc/distributions/" # OS Distributions
-host_templates="/usr/local/vmrc/templates/"   # VM Templates
+host_vmroot="/vmrc/"   # Directory for all vmrc components
+host_vmdir="/vmrc/vm/" # VM configurations, images and mount points
+host_distdir="/vmrc/distributions/" # OS Distributions
+host_templates="/vmrc/templates/"   # VM Templates
 
-echo
-echo Running mkdir -p /usr/local/etc/rc.d/
-mkdir -p /usr/local/etc/rc.d/
+#echo # This exists in base, no?
+#echo Running mkdir -p /usr/local/etc/rc.d/
+#mkdir -p /usr/local/etc/rc.d/
 
 echo
 echo Running cp vm /usr/local/etc/rc.d/
 cp vm /usr/local/etc/rc.d/
 
 echo # May as well as combine these with a numeric mask
-echo Running chmod a+x /usr/local/etc/rc.d/vm
+echo Running chmod o+x /usr/local/etc/rc.d/vm
 chmod a+x /usr/local/etc/rc.d/vm
 
 echo
@@ -64,6 +64,18 @@ mkdir -p $host_templates
 echo
 echo Running cp -p templates/* $host_templates
 cp -p templates/* $host_templates
+
+echo
+echo Running cp -p mkvm.sh* $host_vmroot
+cp -p mkvm.sh* $host_vmroot
+
+echo
+echo Running cp -p vmrcd $host_vmroot
+cp -p vmrcd $host_vmroot
+
+echo
+echo Running chmod o+x ${host_vmroot}vmrcd
+chmod o+x ${host_vmroot}vmrcd
 
 echo
 echo At a minimum, verify the network device in /usr/local/etc/vm.conf
