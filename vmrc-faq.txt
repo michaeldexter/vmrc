@@ -1,0 +1,42 @@
+vmrc Frequently Asked Questions
+
+Q: Why is vmrc written in /bin/sh ?
+
+A: Many reasons:
+
+   * /bin/sh is fast to develop with and execute
+   * /bin/sh is largely portable between operating systems
+   * All system preparation and execution tasks are executed in the shell
+
+   ( Library exposure of all kernel module, networking and hypervisor features
+     would be a elegant but would compromise portability and slow development )
+
+
+Q: Why an rc script?
+
+A: This is how Unix systems launch services and a virtual machine is often
+   desired at boot time. An rc script can also be incorporated into any
+   system orchestration system that can launch a service such as a web server.
+
+
+Q: Why support multiple hypervisors/emulators?
+
+A: Most hypervisors and emulators share similar qualities:
+
+   * A bootable block device or "diskless" directory
+   * A RAM allocation, unless a "jail"
+   * Some amount of network configuration
+
+   Given this fact, virtual machines are remarkably portable and vmrc has been
+   used to boot a hardware OS installation under bhyve, Xen, QEMU and the
+   original host hardware. Most operating systems do not care where they are
+   booted.
+
+   Also, when working with a new hypervisor like bhyve, you never know if your
+   hypervisor or virtual machine is to blame for a boot failure and the ability
+   to validate (or preconfigure) a virtual machine is very helpful.
+
+
+Bugs, questions and/or comments:
+Michael Dexter <editor@callfortesting.org>
+
