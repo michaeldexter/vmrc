@@ -1,0 +1,183 @@
+################################################################ LICENSE
+#
+# Copyright (c) 2012-2016 Michael Dexter <editor@callfortesting.org>
+#
+# Permission to use, copy, modify, and distribute this software for any
+# purpose with or without fee is hereby granted, provided that the above
+# copyright notice and this permission notice appear in all copies.
+#
+# THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+# WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+# MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+# ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+# WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+# ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+# OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+#
+############################################################ INFORMATION
+#
+# Title: virtual machine rc script instructions
+# Version: v.0.9.7
+#
+# vmrc Change Log
+#
+########################################################################
+
+NOTABLE CHANGES FROM .0.9.3 TO .0.9.7
+
+* Template sync
+* Added "list" for all VMs
+* Added LiveCD mode and NONE hostbridge for SmartOS
+* Improved VM autoboot on host boot
+* Improved logging
+* Improved VM networking with sysctl net.link.tap.up_on_open=1
+* Restored "status" directive to show running bhyve VMs
+
+NOTABLE CHANGES FROM .0.9.2 TO .0.9.3
+
+* Expanded mkvm.sh to support custom disk and block sizes based on B, M, G and T
+* Verified QEMU support support serial VNC using one network device and disk
+* Verified Xen support with serial and VNC using one network device and disk
+* Restored basic FreeBSD artisinal installation
+* Modified templates to reflect new functionality
+* Restored multiple NIC and bridge network interfaces
+* /<vm_dir>/vm/<vm_nameN>/<vm_nameN>.conf became vm.conf for easy VM moves
+* /usr/local/etc/vm.conf became vmrc.conf
+
+NOTABLE CHANGES FROM .0.9.1 TO .0.9.2
+
+* Added UEFI-GOP support
+* Added "dryboot" to go with "dryrun" to boot pre-generated configurations
+* Much clean-up
+
+NOTABLE CHANGES FROM .0.9 TO .0.9.1
+
+"We miss you Ben" Edition.
+
+* Moved all two non-FreeBSD install functions from mkvm.sh.functions to mkvm.sh
+* Reimplimented zvol VM storage device support
+* Made install-vmrc.sh FreeNAS aware, removing the /mnt altroot as needed
+* Revised install-vmrc.sh to depend on vm.conf and create datasets or
+  directories as appropriate if the specified zpool is available. mkvm.sh
+  and vmrcd are no longer installed for want of a proper destination
+* Updated FreeBSD 11 template
+* Removed the removal scripts for updating
+* Moved known-issues.txt to vmrc-known-issues.txt to keep documentation together
+* Updated copyright year as encountered
+* Separated this Change List from the Instructions
+* Moved templates relating to pull requests out of "templates/old"
+* Reviewed pull requets, automatically and manually merged most. Thank you!
+* Dragged self off of floor after Ben's passing
+
+NOTABLE CHANGES FROM .0.8.9 TO .0.9
+
+The "You suck because you don't volunteer enough time to work on this" Edition.
+
+* Significant rewrite of vm for modular container support
+* Now relies on executing generated scripts for simplicity and clarity
+* Added "Enabled/disabled" variable
+* Added Xen VM support
+* Added multiple VM disk support
+* Added FreeBSD memstick install support
+* Added vnc and rdp xconsole support
+* Added vmrcd (crazy-) simple web interface (Read /vmrc/vmrcd for details)
+* Added UEFI support
+* Removed zvols, mount, multiple nics/bridges temporarily
+
+NOTABLE CHANGES FROM .0.8.8 TO .0.8.9
+
+* Most, if not all pull requests integrated
+* vm.conf will ship with "host_*" variables set to "/vmrc/". Adjust as needed
+* template updates
+* check-templates.sh now renames templates with a _fail suffix
+* master_template "site*" variables moved up for easier updating
+
+NOTABLE CHANGES FROM .0.8.7 to .0.8.8
+
+* multiple bridge support in vm.conf or leave plank for a pre-configured bridge
+* bridge MAC addres support
+* No default VM NIC: choose tap or vmnet with or without MAC address
+* Updated templates
+* Misc fixes, as always
+
+NOTABLE CHANGES	from .0.8.6 to .0.8.7
+
+* MeetBSD/DevSummit Input. Lots
+* Redirectable info and error output to stdio, logger or nowhere
+* Download payload tasting for compression
+* See the GitHub visual diffs
+
+.0.8.6: Added ACPI shutdown
+.0.8.5: Enabled OpenBSD reboot. Updated flashrd version
+.0.8.4: Bug fixes
+
+NOTABLE CHANGES from .0.8.2 to .0.8.3
+
+* Implemented ACPI reset and poweroff
+* Fixed echoed "cu" command
+* Returned "nmdm" to the templates
+
+NOTABLE CHANGES from .0.8.1 to .0.8.2
+
+* Restored nmdm consoles
+
+NOTABLE CHANGES from .0.8 to .0.8.1
+
+* Fixed "iso" mode
+
+NOTABLE CHANGES from .0.7.1 to .0.8
+
+"Less dev-y, more ops-y"
+
+* Reworked "start" to call rebootable VMs with tmux or screen consoles along
+  the lines of vmrun.sh for "always on" use
+* (SPECIFY A TMUX OR SCREEN CONSOLE FOR "START" TO WORK)
+* Removed "detached" tmux and screen console modes. Both are now detached
+* "start" directive will ignore non-backgrounded consoles (smooth host boot!)
+* Added runvm.sh-style loop to tmux and screen console modes for hosting use
+* All tmux and screen console modes are now "detached" for hosting use
+* Disabled nmdm console mode for now
+* Removed multiple argument VM start/stop (now all or one VM)
+* Various clean-up along the way
+
+NOTABLE CHANGES from .0.7 to .0.7.1
+
+* Fixed several multiple VM start bugs
+* Fixed "attach" for tmux and screen
+* Multiple nmdm consoles still need work
+* Added smarter "nextid" function
+* Added a check-for-ID-conflicts function to mkvm.sh
+
+SIGNIFICANT CHANGES from .0.6.1 to .0.7
+
+* Sweeping restructuring and style changes (400+ line reduction in vm length)
+* Increased tests and VM cleanup upon exit
+* Increased reliance on return codes for continuation logic
+* Some template format changes
+* Improved GRUB support
+* Improved QEMU support
+* Added generated ifconfig_cmd.sh, bhyveload_cmd.sh, bhyve_cmd.sh,
+* grub_cmd.sh and stop_cmd.sh scripts in the VM directory
+* Added zvol support to the 'mount' and 'umount' directives
+* Added raw image (VM-IMAGE/flashrd/FreeNAS/pfSense etc.) install option
+* Added src/obj install option
+* Added fine-grained ZFS feature flag support (11 host would only allow 11 VMs)
+* Added GNU screen support
+
+CHANGES from .0.5 to .0.6
+
+* Introduces multiple VM NIC support. Simply add 1-7 in "vm_addtl_nics"
+in the VM configuration file. This introduced a limit of 100 VM's but
+that can be increased with a documented, one-character change.
+* Adds updated pfSense
+* Minor cosmetic cleanup
+
+SIGNIFICANT CHANGES from .0.4 to .0.5
+
+* The host_vmroot layout has changed.
+* /usr/local/vm/ is now /usr/local/vmrc/vm/
+* The "provision" option has been replaced by mkvm.sh which is based on a
+library of functions and templates.
+* Experimental preflight script and multiple block device support added.
+* Experimental ZFS on root support is included but requires the included
+zfs-boot components or a recent snapshot.

@@ -1,0 +1,132 @@
+################################################################ LICENSE
+#
+# Copyright (c) 2012-2016 Michael Dexter <editor@callfortesting.org>
+#
+# Permission to use, copy, modify, and distribute this software for any
+# purpose with or without fee is hereby granted, provided that the above
+# copyright notice and this permission notice appear in all copies.
+#
+# THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+# WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+# MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+# ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+# WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+# ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+# OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+#
+############################################################ INFORMATION
+#
+# Title: virtual machine rc script instructions
+# Version: v.0.9.7
+#
+# vmrc Quick Start for the Impatient
+#
+########################################################################
+
+Obviously you have downloaded vmrc via a snapshot or GitHub.
+
+vmrc is designed to run on FreeBSD 10.0 or newer.
+
+
+Step 1. Install the required package:
+
+pkg install tmux
+
+Suggested packages and additional containers:
+
+pkg install tmux screen grub2-bhyve qemu xen
+
+Note the instructions at the end of the Xen installation if you plan to run Xen.
+
+The fetch-uefi-firmware.sh script retrieves UEFI firmware for want of a port at
+this time of writing.
+
+
+Step 2. For bhyve, verify that your hardware supports EPT:
+
+dmesg | grep EPT
+or
+dmesg | grep POPCNT
+
+
+3. Edit the vmrc.conf global configuraiton file before running install-vmrc.sh
+
+The default directories will work unless you prefer relocate their contents.
+
+Set your zpool name in "host_zpool" for ZFS dataset and zvol use.
+
+Set an active network adapter in "bridge0_nic". The popular "em0" is preset.
+
+
+4. Run the installer:
+
+sh install-vmrc.sh
+
+
+5. Verify that you have Internet access and create a VM with mkvm.sh
+
+Interactive: sh mkvm.sh
+
+Non-interactive: sh mkvm.sh fbsd103iso freebsd
+
+The latter will create a virtual machine in /vmrc/vm/ named "freebsd0" that is
+installed via ISO CD file and has a 2GB boot image. The default image size can
+be modified in vi during the interactive mode or directly in the "fbsd103iso"
+template in /vmrc/templates/
+
+The template is copied to /vmrc/vm/freebsd0/vm.conf and the ISO is retrieved
+from the specified source automatically. The VM is configured to boot with
+the bhyve hypervisor but the "vm_container" parameter can be set to "xen".
+
+QEMU does not support "install" mode yet but is planned to.
+
+
+If successful, mkvm.sh will prompt you with instructions to start the VM:
+
+service vm oneinstall freebsd0 ; service vm oneattach freebsd0
+
+
+"vm" is the rc script and "one" is used if vm is not enabled in rc.conf
+
+The "install" directive instructs bhyve or Xen to boot to the install ISO
+rather than disk image for the installation process.
+
+Once installation is complete, the VM can be shut down and booted from HD with:
+
+service vm onestart freebsd0 ; service vm oneattach freebsd0
+
+
+For an idea of exactly what vmrc is doing, consider running:
+
+service vm onedryruninstall freebsd0
+and
+service vm onedryrun freebsd0
+
+These will generate the install and non-install boot scripts as:
+
+/vmrc/vm/freebsd0/bhyve.sh
+
+This is the script called during "start" and can be modified in place for
+experimentation and debugging.
+
+To boot a modified bhyve.sh or xen.sh script, run:
+
+service vm onedryboot freebsd0 && service vm oneattach freebsd0
+
+Or in the captive console:
+
+sh /vmrc/vm/freebsd0/bhyve.sh
+
+Note that any modifications to the boot script will be overwritten if
+"install" or "start" are run again. Nearly any paramter you set can be
+put in vm.conf for permanent use.
+
+
+Additional host bridges and VM disks or NICs can be added using the existing
+host0/disk0/nic0 sytax by only incrementing the number. The configuation file
+indicates what parameters are required.
+
+Bugs, questions and/or comments:
+Michael Dexter <editor@callfortesting.org>
+
+Please submit bug reports before submitting pull requests.

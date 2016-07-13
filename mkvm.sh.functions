@@ -2,7 +2,7 @@
 #
 ################################################################ LICENSE
 #
-# Copyright (c) 2012-2014 Michael Dexter <editor@callfortesting.org>
+# Copyright (c) 2012-2016 Michael Dexter <editor@callfortesting.org>
 #
 # Permission to use, copy, modify, and distribute this software for any
 # purpose with or without fee is hereby granted, provided that the above
@@ -19,7 +19,7 @@
 ############################################################ INFORMATION
 # 
 # Title: make VM script function library
-# Version: v.0.8.8
+# Version: v.0.9.3
 #
 # Functions used by the mkvm.sh Virtual Machine provisioning script
 #
@@ -28,24 +28,6 @@
 f_timestamp() # A simple timestamp function
 {
 echo  $( date "+%Y%m%d-%H%M%S" )
-}
-
-f_filetype() # A smarter file(1) that briefer than brief mode
-{
-case $( file -bi $1 ) in
-		"application/x-bzip2; charset=binary") echo .bz2
-	;;
-		"application/x-compress; charset=binary") echo .Z
-	;;
-		"application/x-gzip; charset=binary") echo .gz
-	;;
-		"application/x-xz; charset=binary") echo .xz
-	;;
-		"application/x-zip; charset=binary") echo .zip
-	;;
-	*) echo "Uncompressed" # This might want to be a return value
-# FYI images are application/octet-stream; charset=binary
-esac
 }
 
 # md(4) functions from vm and may be useful after mid-provision exits
@@ -635,7 +617,7 @@ f_gpart_gpt_zpool_preflight() ## $1 dev $2 pool name $3 mount point ##
 	[ -e $1 ] || echo Mount point $3 does not exist.
 	ls $3
 	echo You entered $2 and $3
-	echo CreatingPool
+	echo Creating Pool
 }
 
 f_gpart_gpt_zpool() ## $1 dev $2 pool name $3 mount point ##
@@ -1004,40 +986,6 @@ f_set_password() ## $1 password $2 mount point ##
 f_set_password_debug() ## $1 mount point ##
 {
 	echo set_password_post
-}
-
-# f_getnextid
-#
-# Get the next available VMID in ~/vmrc/vm/
-#
-# BUG: Is this triple digit safe?
-f_getnextid() ## $1 host_vmdir from /usr/local/etc/vm.conf
-{
-		local nextid=0 # Initialize to 0
-		local conflict=""
-
-	if [ $( ls $1 | wc -l ) = 0 ]; then # None exist. A better test?
-# Note -d check in vm_start
-		echo $nextid # Use the initialized zero
-		exit 0
-	else
-		while :; do # Loop until satisfied - risky?
-			for vm_found in ${1}/* ; do # Full path name
-        	                vm_foundname="${vm_found##*/}" # Strip path
-                	        vm_foundid="${vm_foundname##*[!0-9]}"
-                        	if [ "$vm_foundid" = "$nextid" ]; then
-					conflict="yes"
-				fi
-			done # Pass completed
-			if [ "$conflict" = "yes" ]; then
-				nextid=$(($nextid+1))
-				conflict="" # Reset "conflict" !
-			else
-				echo $nextid
-				exit 0
-			fi
-		done
-	fi
 }
 
 # f_checkconflicts

@@ -1,0 +1,70 @@
+Known vmrc Issues/To do
+
+1. bhyveload has a 31 character VM name limit
+2. bhyve will not yet report *which* backing device is missing (Pending)
+3. bhyve UEFI-GOP does not support numbered VNC "displays"
+4. mkvm.sh img UFS installs will fail to boot unless the VM's fstab is set
+   to ada0 (See notes at the bottom of the template)
+5. VM networking will NOT survive 'service netif restart' because the required
+   values are not in loader.conf or rc.conf. To add them persistently:
+
+/boot/loader.conf
+vmm_load="YES"
+if_bridge_load="YES"
+#bridgestp_load="YES"
+if_tap_load="YES"
+
+/etc/sysctl.conf
+net.link.tap.up_on_open=1
+#net.inet.ip.forwarding=1
+
+/etc/rc.conf
+cloned_interfaces="bridge0"			<- Use values from your system
+ifconfig_bridge0="addm em0 addm tap8000"	<- Use values from your system
+ifconfig_tap8000="up"
+
+
+VM Operating System Notes
+
+Exeriment with the "-w" "-W" and "-A" "bhyve_flags" in the VM configuration file
+to diagnose compatibility issues.
+
+
+FreeBSD
+
+FreeBSD requires bhyve AHCI table generation via the "-A" flag.
+
+FreeBSD does not support an xhci USB tablet with UEFI-GOP.
+
+Early versions of FreeBSD 10.* and older require a change to /etc/ttys to allow
+for the use of a serial console in the absense of a video console:
+
+ttyu0 "/usr/libexec/getty 3wire.9600"  vt100  on secure
+
+
+OpenBSD
+
+Older versions of OpenBSD require the amd_hostbridge and newer ones may perform
+faster with it under higher loads.
+
+OpenBSD is not yet compatible with UEFI-GOP but the bug is being tracked down.
+
+
+NetBSD
+
+NetBSD only supports legacy interrupts and thus cannot support PCI numbering
+beyond 0:0 though 31:7. 0:0:0 entries may cause an error.
+
+
+Microsoft Windows
+
+Microsoft Windows only supports legacy interrupts and thus cannot support PCI
+numbering beyond 0:0 though 31:7. 0:0:0 entries will cause an error.
+
+Desktop versions of Windows require a dummy CD-ROM device to be attached for
+licensing purposes. Simly 'touch' a file name and attach it as an ahci-cd disc.
+
+
+Bugs, questions and/or comments:
+Michael Dexter <editor@callfortesting.org>
+

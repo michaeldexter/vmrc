@@ -2,7 +2,7 @@
 # 
 ################################################################ LICENSE
 #
-# Copyright (c) 2012-2015 Michael Dexter <editor@callfortesting.org>
+# Copyright (c) 2012-2016 Michael Dexter <editor@callfortesting.org>
 # 
 # Permission to use, copy, modify, and distribute this software for any
 # purpose with or without fee is hereby granted, provided that the above
@@ -19,12 +19,13 @@
 ############################################################ INFORMATION
 #
 # Title: Check Templates Script
-# Version: v.0.9
+# Version: v.0.9.3
 
 # This is a simple script that used 'wget -q --spider' to verify that all of
 # the downloadable images in the templates are still accessible.
 # fetch(1) has replated wget in this script
 
+# Consider reading from vmrc.conf
 host_distdir="/vmrc/templates/"
 
 for template in "$host_distdir"/*; do

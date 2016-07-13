@@ -1,76 +1,75 @@
-# Configuration template for a VM used by mkvm.sh and the vm rc script
-# mkvm.sh copies this to ~/vmrc/vm/<vmname><vmid>.conf
+# Virtual Machine configuration template used by mkvm.sh and the "vm" rc script
+# mkvm.sh copies this to ~/vmrc/vm/<vmname#>/vm.conf
 
 # Provisioning Variables (See FreeBSD-specific VM provisioning variables below)
-install_method="iso"      # "raw", "iso", "img", "distset" or "obj"
-install_site="ftp://iso.netbsd.org"
+install_method="iso"      # "raw", "iso", "img", "distset" or "objdir"
+install_site="http://cdn.netbsd.org"
                           # Distribution payload site i.e. ftp://ftp.freebsd.org
 #install_site="file://"   # Local payload option once downloaded (choose one)
-site_path="/pub/NetBSD/NetBSD-7.0/amd64/installation/cdrom/"
+site_path="/pub/NetBSD/NetBSD-7.0.1/images/"
                           # Distribution payload directory path
-site_payload="boot-com.iso"
-                          # Distribution payload file(s) (space separated)
-bootrom_site=""           # bhyve and QEMU bootrom payload site
-bootrom_path=""           # bootrom payload directory path
-bootrom_payload=""        # bootrom payload file
-bootrom=""                # TBD
+site_payload="NetBSD-7.0.1-amd64.iso"
+                          # Distribution payload file(s). ISO, IMG or
+                          # space-separated FreeBSD distribution sets
 
-# bhyve-grub Parameters
+# bhyve-grub Parameters (Early to facilitate frequent updating)
 iso_grub_cfg="knetbsd -h -r cd0a (cd0)/netbsd\nboot"
-                          # \n separated grub.cfg (required for GRUB ISO boot)
-iso_grub_d="-d $host_vmdir/$vm_name"
-                          # ISO mode grub-bhyve -d directive
-                          # "-d $host_vmdir/$vm_name" for hostfs or "-d /grub/"
+                          # \n separated grub.cfg (if required by GRUB)
 iso_grub_r=""             # VM device where to find grub.cfg i.e. -r cd0,msdos1
+iso_grub_d="-d $host_vmdir/$vmname"
+                          # Install mode grub-bhyve -d directory directive
+                          # "-d $host_vmdir/$vmname" for hostfs or "-d /grub/"
 img_grub_cfg="knetbsd -h -r wd0a (hd0,netbsd1)/netbsd\nboot"
-                          # \n separated grub.cfg (required for GRUB img boot)
-img_grub_d="-d $host_vmdir/$vm_name"
-                          # IMG mode grub-bhyve -d directive 
-                          # "-d $host_vmdir/$vm_name" for hostfs or "-d /grub/"
+                          # \n separated grub.cfg (if required by GRUB)
 img_grub_r=""             # VM device where to find grub.cfg i.e. -r hd0,msdos1
+img_grub_d="-d $host_vmdir/$vmname"
+                          # Normal mode grub-bhyve -d directory directive 
+                          # "-d $host_vmdir/$vmname" for hostfs or "-d /grub/"
 
 # VM runtime boot variables
-vm_autoboot=""            # "YES" to enable VM autoboot
+vm_autoboot=""            # "YES" to enable VM boot during host boot
+vm_livecd=""              # "YES" for a LiveCD like SmartOS or VyOS
 vm_cpus="2"               # Number of VM virtual CPUs (max 16) (required)
-vm_ram="1024"             # VM RAM Allocation in MB (required)
-vm_console="tmux"         # "#stdio", "nmdm", "tmux" or "screen" (required)
-vm_xconsole=""            # "vnc" or "rdp"
-vm_container="bhyve"      # "bhyve", "jail", "qemu", "vbox" or "xen" (required)
-bhyve_loader="grub-bhyve" # "bhyveload", "grub-bhyve" or "uefi" (req. for bhyve)
-bhyve_hostbridge=""       # "amd_" for the AMD hostbridge (required for OpenBSD)
-bhyve_flags=""            # Additional bhyve(8) flags (-w is common on Linux)
+vm_ram="1024"             # VM RAM Allocation in MB i.e. "2048" (required)
+vm_console="tmux"         # "tmux" or "screen" (required)
+vm_container="bhyve"      # "bhyve", "qemu" or "xen" (required)
 
-# VM Disks named disk0, disk1, disk2 etc.
+bhyve_loader="grub-bhyve" # "bhyveload", "grub-bhyve", "uefi-csm" or "uefi-gop"
+uefi_bootrom=""           # Full path to UEFI boot ROM
+uefi_fb_width=""          # UEFI-GOP framebuffer width, i.e. "1024"
+uefi_fb_height=""         # UEFI-GOP framebuffer height, i.e. "768"
+uefi_tablet=""            # "YES" for precise USB mouse (not for FreeBSD)
+bhyve_hostbridge=""       # Blank for default, "AMD" for AMD and "NONE" for none
+#bhyveload_flags=""        # Additional bhyveload(8) flags
+bhyve_flags=""            # Additional bhyve(8) flags
+                          # -A for ACPI tables (Required for FreeBSD)
+                          # -w Needed for man OSs
+                          # -W MSI, rather than MSI-X Interrupts
+                          # -p CPU Pinning
 
-vm_boot_disk="disk0"      # Equivalent to BIOS boot disk selection
+qemu_console=""           # "text" or "vnc"
+xen_console=""            # "text" or "vnc"
 
-disk0_virtio="ahci-hd"    # "ahci-hd" or "virtio-blk" (required)
-disk0_type="img"          # dev, img, zvol, iscsi or nfs (required)
+# VM Disks named disk0 (boot disk), disk1, disk2 etc.
+
+disk0_virtio="ahci-hd"    # "ahci-hd" or "virtio-blk" (required for bhyve)
+disk0_type="img"          # "dev", "img", "zvol", #iscsi or #nfs (required)
                           # Set "img" here for raw image installation method
-disk0_device=""           # Full path to existing device or zvol
-disk0_size="2G"           # Disk image or zvol size in M or G if provisioned
+disk0_device=""           # Optional full path to existing device or zvol
+disk0_size="2G"           # Provisioned image or zvol size in B, K, M, G or T
+                          # Blank for unmodified raw images, exact or larger
+                          # for growfs raw images and zvols
+disk0_blocksize=""        # Provisioned zvol blocksize in B, K or M
 disk0_fs=""               # "ufs" or "zfs" if provisioned or fsck'd with FreeBSD
-#disk0_fsck_on_boot=""    # fsck VM boot device on boot
-#disk0_zfs_flags=""       # ZFS features "-d -o feature@async_destroy=enabled"
-#disk0_root="p3"          # KEEP? Probe?
-#disk0_snapshot_on_boot=""        # zfs snapshot ZFS-based VMs on boot
-#disk0_snapshot_on_shutdown=""    # zfs snapshot ZFS-based VMs on shutdown
-#disk0_malloc_on_boot=""          # Are you crazy?
 
-# nic0, nic1...
-# passthrough0, passthrough1...
-
-# VM Network devices. nicN="<type> <bridge> <MAC>" where "nicN" is sequentially
-# incrementing from nic0, "type" is "tap" or "vmnet", "bridge" is a valid
-# bridge in vm.conf or on the host and "MAC" is an optional MAC address
-# MAXIMUM 8 NICs: nic0 through nic7 as we depend on PCI slot numbers
-#nic0=""                  # i.e. "tap bridge0" "vmnet bridge1 00:99:3d:e0:e0:f6"
+# VM Network devices nicN_bridge and nicN_type are required
+# Verify that requested bridges are configured in vmrc.conf
+nic0_bridge="bridge0"     # Bridge on the host to attach the NIC to
+nic0_type="tap"           # "tap" or "vmnet"
+#nic0_mac=""               # Optional NIC MAC address (Future)
+#nic0_description=""       # Optional "description" (Future)
 
 # FreeBSD-specific VM provisioning variables
-requires_tty=""           # "YES" if a serial tty is required
-vm_svntag=""              # FreeBSD SVN tag
-vm_srcconf=""             # FreeBSD src.conf file
-vm_srcdir=""              # Location of OS sources
 vm_objdir=""              # Location of OS object files
 vm_dev_util=""            # VM Partitioning tool "fdisk" or "gpart"
 vm_dev_layout=""          # VM partitioning layout: "gpt" or "mbr"

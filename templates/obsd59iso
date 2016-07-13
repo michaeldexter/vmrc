@@ -3,33 +3,34 @@
 
 # Provisioning Variables (See FreeBSD-specific VM provisioning variables below)
 install_method="iso"      # "raw", "iso", "img", "distset" or "objdir"
-install_site="http://ftp.osuosl.org"
+install_site="ftp://ftp3.usa.openbsd.org"
                           # Distribution payload site i.e. ftp://ftp.freebsd.org
 #install_site="file://"   # Local payload option once downloaded (choose one)
-site_path="/pub/centos/7/isos/x86_64/"
+site_path="/pub/OpenBSD/5.9/amd64/"
                           # Distribution payload directory path
-site_payload="CentOS-7-x86_64-Minimal-1511.iso"
+site_payload="install59.iso"
                           # Distribution payload file(s). ISO, IMG or
                           # space-separated FreeBSD distribution sets
 
 # bhyve-grub Parameters (Early to facilitate frequent updating)
-iso_grub_cfg="linux (cd0)/isolinux/vmlinuz\ninitrd (cd0)/isolinux/initrd.img\nboot"
+iso_grub_cfg="kopenbsd -h com0 (cd0)/5.9/amd64/bsd.rd\nboot"
                           # \n separated grub.cfg (if required by GRUB)
 iso_grub_r=""             # VM device where to find grub.cfg i.e. -r cd0,msdos1
 iso_grub_d="-d $host_vmdir/$vmname"
                           # Install mode grub-bhyve -d directory directive
                           # "-d $host_vmdir/$vmname" for hostfs or "-d /grub/"
-img_grub_cfg=""           # \n separated grub.cfg (if required by GRUB)
-img_grub_r="-r hd0,msdos1"
-                          # VM device where to find grub.cfg i.e. -r hd0,msdos1
-img_grub_d="-d /grub2/"   # Normal mode grub-bhyve -d directory directive 
+img_grub_cfg="kopenbsd -h com0 -r sd0a (hd0,openbsd1)/bsd\nboot"
+                          # \n separated grub.cfg (if required by GRUB)
+img_grub_r=""             # VM device where to find grub.cfg i.e. -r hd0,msdos1
+img_grub_d="-d $host_vmdir/$vmname"
+                          # Normal mode grub-bhyve -d directory directive 
                           # "-d $host_vmdir/$vmname" for hostfs or "-d /grub/"
 
 # VM runtime boot variables
 vm_autoboot=""            # "YES" to enable VM boot during host boot
 vm_livecd=""              # "YES" for a LiveCD like SmartOS or VyOS
 vm_cpus="2"               # Number of VM virtual CPUs (max 16) (required)
-vm_ram="2048"             # VM RAM Allocation in MB i.e. "2048" (required)
+vm_ram="1048"             # VM RAM Allocation in MB i.e. "2048" (required)
 vm_console="tmux"         # "tmux" or "screen" (required)
 vm_container="bhyve"      # "bhyve", "qemu" or "xen" (required)
 
