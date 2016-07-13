@@ -37,6 +37,17 @@ A: Most hypervisors and emulators share similar qualities:
    to validate (or preconfigure) a virtual machine is very helpful.
 
 
+Q: What hypervisors and emulators does vmrc support?
+
+A: bhyve, Xen and QEMU on FreeBSD
+
+
+Q: What hypervisors and emulators is vmrc planned to support?
+
+A: jail(8), VirtualBox, Bochs (supports single stepping!), GXemul, simh and
+   QEMU ARM64.
+
+
 Bugs, questions and/or comments:
 Michael Dexter <editor@callfortesting.org>
 

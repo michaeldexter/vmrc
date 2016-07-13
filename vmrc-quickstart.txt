@@ -49,7 +49,7 @@ or
 dmesg | grep POPCNT
 
 
-3. Edit the vmrc.conf global configuraiton file before running install-vmrc.sh
+3. Edit the vmrc.conf global configuration file before running install-vmrc.sh
 
 The default directories will work unless you prefer relocate their contents.
 
@@ -118,12 +118,12 @@ Or in the captive console:
 sh /vmrc/vm/freebsd0/bhyve.sh
 
 Note that any modifications to the boot script will be overwritten if
-"install" or "start" are run again. Nearly any paramter you set can be
+"install" or "start" are run again. Nearly any parameter you set can be
 put in vm.conf for permanent use.
 
 
 Additional host bridges and VM disks or NICs can be added using the existing
-host0/disk0/nic0 sytax by only incrementing the number. The configuation file
+host0/disk0/nic0 syntax by only incrementing the number. The configuration file
 indicates what parameters are required.
 
 Bugs, questions and/or comments:

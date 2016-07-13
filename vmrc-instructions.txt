@@ -47,7 +47,7 @@ FreeBSD 10.* VM provisioning and management scripts.
 Because bhyve is only the latest multiplicity solution on FreeBSD, this
 rc script includes multiple container support including bhyve and Xen,
 and aims to include jail, qemu, VirtualBox, simh and GXemul support. While this
-notion may be disconcerning to some, you will find that virtual machines care
+notion may be disconcerting to some, you will find that virtual machines care
 little about their containers and are increasingly container-agnostic.
 
 vmrc helped bhyve arrive in FreeBSD 10.0 in January of 2014, rather than 11.0.
@@ -79,7 +79,7 @@ host_vmdir="/vmrc/vm/"			# Virtual Machines
 host_zpool=""				# Optional Host zpool
 
 Also edit the remaining parameters as needed, notably "bridge0nic" which will
-be the network interface used for briged networking of virtual machines.
+be the network interface used for bridged networking of virtual machines.
 
 Run "sh install-vmrc.sh" as root or read it and perform the steps manually,
 adjusting the paths to suit your system. Running it on an installed system
@@ -139,7 +139,7 @@ All templates are currently set to a tmux console.
 
 To boot a new virtual machine and attach to its serial console:
 
-service vm onestart freebsd0 ; service vm oneattach freebsd0
+service vm instead freebsd0 ; service vm oneattach freebsd0
 
 
 If booting to an ISO installer:
@@ -375,7 +375,7 @@ UEFI firmware (Retrieved by a script for now. Port to come.)
 
 ### TEMPLATES ###
 
-The template naming attemps to convey as much information about a VM in as
+The template naming attempts to convey as much information about a VM in as
 little space possible. VM names over 31 characters will cause bhyve load to
 give the error:
 
@@ -431,12 +431,12 @@ bootable block device in the form of a /dev/ device or a disk image plus a
 virtual machine name. These must be consistent between both utilities.
 
 bhyve(8) is provided additional arguments describing PCI devices (notably for
-VirtIO storage and network) plus miscelanous operational parameters. 
+VirtIO storage and network) plus miscellaneous operational parameters. 
 
 A bhyve(8) virtual machine is shutdown with a reboot(8) command and the
 /dev/vmm/<vmname> entry is cleaned up with the bhyvect(8) command.
 
-VM network is primarily achived by providing an if_tap(4) network device that is
+VM network is primarily achieved by providing an if_tap(4) network device that is
 associated with an if_bridge(4) bridge. Alternatively a hardware network device
 could be passed to the virtual machine but this is not supported by vmrc.
 
@@ -450,10 +450,10 @@ Alternatively, virtual machines can be built in a manner similar to jail(8)
 systems or hardware-based systems. The FreeBSD ISO install images can be used
 for this purpose and this the approach taken by vmrun.sh. Note that all but the
 most recent FreeBSD 11.0-CURRENT and 10.0-STABLE releases require a /etc/ttys
-modification to work properly. vmrc will peform this modification as needed for
+modification to work properly. vmrc will perform this modification as needed for
 most FreeBSD versions and FreeBSD-derived operating systems.
 
-The vmrc template syntax should be self-explanatory and attempts to accomodate
+The vmrc template syntax should be self-explanatory and attempts to accommodate
 most desired system configuration options short of complex partitioning and the
 creation of users or installation of ports and packages. Once built and booted,
 a bhyve virtual machine behaves like a normal system and can be operated with
@@ -483,10 +483,10 @@ The vm rc script and mkvm.sh perform two key functions:
 1. Programmatically construct virtual machine boot devices (mkvm.sh/"iso" mode)
 2. Manage the lifecycle operation of the virtual machines it creates
 
-A "Virtual Machine" is comprised of a directory containing a bootable disk
-image, a configuration file derived from a template, a mnt/ directory for the
-attachment and mounting of the disk image (FreeBSD only) and an optional
-preflight script.
+A "Virtual Machine" is comprised of a "vm.conf" configuration file, a soft link
+to an install ISO or image "install.iso|img", a boot disk "disk0.img", optional
+additional disks i.e. disk1.img and the generated boot script i.e. bhyve.sh,
+xen.sh or qemu.sh.
 
 mkvm.sh is largely a simplified FreeBSD installer that is comprised of
 preflight, primary and debug functions.
@@ -517,22 +517,19 @@ indicating the NIC ID (vm0's tap0 -> tap01 or vm3's tap3 ->tap31).
 
 This revealed a problem: ifconfig will now allow for tap ID's to be
 prefixed with "0" and thus vm0's tap03 would be invalid. To solve this, vmrc 
-emplys a double digit VMID that is prefixed with the arbitrary "8", resulting
+employs a double digit VMID that is prefixed with the arbitrary "8", resulting
 in vm0's fourth network interface being:
 
 tap8033 [ 8 | VM ID of 3 | Network Device ID of 4 (counting from 0) ]
 
 Network device "3" is the fourth device because the first one is "0".
 
-Additional network devices could be creatd on additional PCI virtual interfaces
-but this functionality is not supported by vmrc.
-
 
 ### SPECIAL THANKS ###
 
 Thank you Neel, Peter, John B. and Tycho for your hard work on bhyve.
 
-Thank you Devin for greatly improving this script, Bryan V for valueable input,
+Thank you Devin for greatly improving this script, Bryan V for valuable input,
 and Allan at ScaleEngine for testing it and providing resources for it and
 bhyve's improvement.
 
