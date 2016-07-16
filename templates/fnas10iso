@@ -30,7 +30,7 @@ vm_ram="4096"             # VM RAM Allocation in MB i.e. "2048" (required)
 vm_console="tmux"         # "tmux" or "screen" (required)
 vm_container="bhyve"      # "bhyve", "qemu" or "xen" (required)
 
-bhyve_loader="uefi_gop"   # "bhyveload", "grub-bhyve", "uefi-csm" or "uefi-gop"
+bhyve_loader="uefi-gop"   # "bhyveload", "grub-bhyve", "uefi-csm" or "uefi-gop"
 uefi_bootrom="/usr/share/uefi-firmware/BHYVE_UEFI_20160526.fd"
                           # Full path to UEFI boot ROM
 uefi_fb_width="640"       # UEFI-GOP framebuffer width, i.e. "1024"
