@@ -615,8 +615,8 @@ of=/dev/zvol/$host_zpool$host_vmdir$vm_name/disk0 conv=notrunc bs=1m || \
 	esac # End install_method: raw: disk0_type
 	echo ; echo "You can boot your VM with:"
 	echo ; echo "service vm onestart $vm_name"
-	echo "service vm oneattach $vm_name	\# Serial Console"
-	echo "service vm onevnc $vm_name	\# VNC Console, if appropriate"
+	echo "service vm oneattach $vm_name	# Serial Console"
+	echo "service vm onevnc $vm_name	# VNC Console, if appropriate"
 	echo
 		exit 0
 	;; # End install_method: raw
@@ -674,8 +674,8 @@ echo Linking $host_distdir/$site_path/${site_payload}$ending \
 
 	echo ; echo "You can boot your VM and begin installation with:"
 	echo ; echo "service vm oneinstall $vm_name"
-	echo "service vm oneattach $vm_name	\# Serial Console"
-	echo "service vm onevnc $vm_name	\# VNC Console, if appropriate"
+	echo "service vm oneattach $vm_name	# Serial Console"
+	echo "service vm onevnc $vm_name	# VNC Console, if appropriate"
 	echo
 	echo Some installers will require a "stop" after installation
 	echo
@@ -1015,8 +1015,8 @@ mdconfig -du $vm_device
 
 	echo ; echo "You can boot your VM with:"
 	echo ; echo "service vm onestart $vm_name"
-	echo "service vm oneattach $vm_name	\# Serial Console"
-	echo "service vm onevnc $vm_name	\# VNC Console, if appropriate"
+	echo "service vm oneattach $vm_name	# Serial Console"
+	echo "service vm onevnc $vm_name	# VNC Console, if appropriate"
 	echo
 		exit 0
 
