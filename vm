@@ -1221,7 +1221,7 @@ vm_restart() # Behavior TBD
 
 vm_status() # Behavior TBD: bhyve and Xen: List VMs, jls, qemu?
 {
-	[ -d /dev/vmm ] && echo "Loaded bhyve VMs:" ; ls /dev/vmm >/dev/null >&2
+	[ -d /dev/vmm ] && echo "Loaded bhyve VMs: $(ls /dev/vmm >/dev/null >&2)"
 	[ -d /dev/xen ] && echo "NB! Add a Xen list here!"
 # NB! Something for the other containers!
 } # End vm_status
