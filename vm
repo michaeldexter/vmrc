@@ -146,7 +146,7 @@ local vmid_list=""
 	{ f_error "Conflicting VM IDs: ${vmid_list}. Exiting" ; exit 1 ; }
 } # End f_check_vmid_conflicts
 
-f_check_vm_started() # $1 # Check if a given VM name is started under any containre 
+f_check_vm_started() # $1 # Check if a given VM name is started under any containre
 {
 	vmname="$1"
 
@@ -267,7 +267,7 @@ nic_count=0 # Counter for NIC device number and PCI bus numbers
 # Abort if nic0_bridge is set but bridge0_nic is NOT set
 
 if [ ! -z $nic0_bridge ]; then
-	nic_bridge=$nic0_bridge 
+	nic_bridge=$nic0_bridge
 	eval nic_bridge_host_nic=\$${nic_bridge}_nic
 	[ -z $nic_bridge_host_nic ] && \
 { f_error "Host bridge NIC not set. Skipping NIC $nic_count" ; return 1 ; }
@@ -327,7 +327,7 @@ cat >> $bootscript <<-EOF
 if [ \$( ifconfig $nic_dev >/dev/null 2>&1 ); then
 	ifconfig $nic_dev | grep -qw "UP,BROADCAST" || \\
 	ifconfig $nic_dev up >/dev/null 2>&1 || \\
-	{ logger "$nic_dev failed to up. Skipping $vmname" ; return 1 ; }	
+	{ logger "$nic_dev failed to up. Skipping $vmname" ; return 1 ; }
 
 else
 
@@ -629,7 +629,7 @@ case $bhyve_loader in
 		[ -r $uefi_bootrom ] || \
 	{ f_error "bootrom $uefi_bootrom not found. Skipping" ; return 1 ; }
 echo "	-l bootrom,$uefi_bootrom \\" >> $bootscript
-	
+
 	case $bhyve_loader in
 		uefi-gop)
 			[ -z $uefi_fb_width ] && \
@@ -638,7 +638,7 @@ echo "	-l bootrom,$uefi_bootrom \\" >> $bootscript
 		{ f_error "uefi_fb_height not set. Skipping" ; return 1 ; }
 
 		vnc_wait_for_connection=""
-		[ "$install_mode" = "YES" ] && vnc_wait_for_connection=",wait"	
+		[ "$install_mode" = "YES" ] && vnc_wait_for_connection=",wait"
 # NB! We are recklessly using ports 59** but not too many things will collide
 echo "	-s 29,fbuf,tcp=0.0.0.0:59$vmid,w=${uefi_fb_width},h=${uefi_fb_height}$vnc_wait_for_connection \\" >> $bootscript
 #NB! Consider sending the VNC port information to the logger
@@ -652,7 +652,7 @@ echo "	-s 30,xhci,tablet \\" >> $bootscript
 
 esac # End UEFI Parameters
 
-# lpc on slot 31 is a hard requirement for UEFI 
+# lpc on slot 31 is a hard requirement for UEFI
 echo "	-s 31,lpc -l com1,stdio \\" >> $bootscript
 
 # Complete the bhyve command
@@ -803,7 +803,7 @@ f_vm_boot() # $vmname # Executes VM boot scripts and thus desired console
 	case $vm_container in
 		xen)
 			[ -d /dev/xen ] || \
-		{ f_error "Xen kernel not loaded. Skipping" ; return 1 ; }	
+		{ f_error "Xen kernel not loaded. Skipping" ; return 1 ; }
 		;; # End case xen
 		bhyve)
 			[ -d /dev/xen ] && \
@@ -818,7 +818,7 @@ f_vm_boot() # $vmname # Executes VM boot scripts and thus desired console
 			[ -x /usr/local/bin/qemu-system-x86_64 ] || \
 		{ f_error "QEMU is not installed. Skipping" ; return 1 ; }
 		;; # End case qemu
-	esac # case verify ability to run xen or bhyve 
+	esac # case verify ability to run xen or bhyve
 
 	f_info "Booting $vmname"
 
@@ -827,7 +827,7 @@ f_vm_boot() # $vmname # Executes VM boot scripts and thus desired console
 	case $vm_console in
 		nmdm)
 			f_error "nmdm is not yet implemented"
-		;; # End case nmdm 
+		;; # End case nmdm
 		tmux)
 			f_info "Booting $vmname in a tmux session"
 /usr/local/bin/tmux new -d -s $vmname "/bin/sh $host_vmdir$vmname/$vm_container.sh"
@@ -841,7 +841,7 @@ f_vm_boot() # $vmname # Executes VM boot scripts and thus desired console
 		;; # End case dtach
 		*) f_error "vm_console is not set. Skipping" ; return 1 ;
 	esac
- 
+
 } # End f_vm_boot
 
 f_start_exit() # Uses global $vmcount # Conditional exit for f_start
@@ -1016,7 +1016,7 @@ disk_type=""
 	f_vm_boot $vmname
 
 # NB! VEIRFY THAT f_vm_prep and f_vm_boot VALIDATE WHAT WE DID NOT CHECK HERE
-	
+
 } # End f_start
 
 f_stop() # $vmname # Called in a loop for all VMs or for one VM
@@ -1221,8 +1221,23 @@ vm_restart() # Behavior TBD
 
 vm_status() # Behavior TBD: bhyve and Xen: List VMs, jls, qemu?
 {
-	[ -d /dev/vmm ] && echo "Loaded bhyve VMs:" ; ls /dev/vmm >/dev/null >&2
-	[ -d /dev/xen ] && echo "NB! Add a Xen list here!"
+	# check for bhyve VMs
+	if [ -d /dev/vmm ]; then
+		echo -n "Loaded bhyve VMs:  "
+		for VM in /dev/vmm/*; do
+			echo -n "$(basename ${VM}) "
+		done
+		echo ""
+	else
+		echo "No bhyve VMs running."
+	fi
+
+	# check for xen vms
+	if [ -d /dev/xen ]; then
+		echo "NB! Add a Xen list here!"
+	#else
+	#	echo "No Xen VMs running."
+	fi
 # NB! Something for the other containers!
 } # End vm_status
 
