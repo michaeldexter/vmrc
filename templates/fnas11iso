@@ -3,23 +3,22 @@
 
 # Provisioning Variables (See FreeBSD-specific VM provisioning variables below)
 install_method="iso"      # "raw", "iso", "img", "distset" or "objdir"
-install_site="http://cdimage.debian.org"
+install_site="https://download.freenas.org"
                           # Distribution payload site i.e. ftp://ftp.freebsd.org
 #install_site="file://"   # Local payload option once downloaded (choose one)
-site_path="/debian-cd/8.5.0/amd64/iso-cd/"
+site_path="/11.1/latest/x64/"
                           # Distribution payload directory path
-site_payload="debian-8.5.0-amd64-netinst.iso"
+site_payload="FreeNAS-11.1-U4.iso"
                           # Distribution payload file(s). ISO, IMG or
                           # space-separated FreeBSD distribution sets
 
 # bhyve-grub Parameters (Early to facilitate frequent updating)
 iso_grub_cfg=""           # \n separated grub.cfg (if required by GRUB)
-iso_grub_r="-r cd0"       # VM device where to find grub.cfg i.e. -r cd0,msdos1
+iso_grub_r=""             # VM device where to find grub.cfg i.e. -r cd0,msdos1
 iso_grub_d=""             # Install mode grub-bhyve -d directory directive
                           # "-d $host_vmdir/$vmname" for hostfs or "-d /grub/"
 img_grub_cfg=""           # \n separated grub.cfg (if required by GRUB)
-img_grub_r="-r hd0,msdos1"
-                          # VM device where to find grub.cfg i.e. -r hd0,msdos1
+img_grub_r=""             # VM device where to find grub.cfg i.e. -r hd0,msdos1
 img_grub_d=""             # Normal mode grub-bhyve -d directory directive 
                           # "-d $host_vmdir/$vmname" for hostfs or "-d /grub/"
 
@@ -27,14 +26,15 @@ img_grub_d=""             # Normal mode grub-bhyve -d directory directive
 vm_autoboot=""            # "YES" to enable VM boot during host boot
 vm_livecd=""              # "YES" for a LiveCD like SmartOS or VyOS
 vm_cpus="2"               # Number of VM virtual CPUs (max 16) (required)
-vm_ram="1024"             # VM RAM Allocation in MB i.e. "2048" (required)
+vm_ram="4096"             # VM RAM Allocation in MB i.e. "2048" (required)
 vm_console="tmux"         # "tmux" or "screen" (required)
 vm_container="bhyve"      # "bhyve", "qemu" or "xen" (required)
 
-bhyve_loader="grub-bhyve" # "bhyveload", "grub-bhyve", "uefi-csm" or "uefi-gop"
-uefi_bootrom=""           # Full path to UEFI boot ROM
-uefi_fb_width=""          # UEFI-GOP framebuffer width, i.e. "1024"
-uefi_fb_height=""         # UEFI-GOP framebuffer height, i.e. "768"
+bhyve_loader="uefi-gop"   # "bhyveload", "grub-bhyve", "uefi-csm" or "uefi-gop"
+uefi_bootrom="/usr/local/share/uefi-firmware/BHYVE_UEFI.fd"
+                          # Full path to UEFI boot ROM
+uefi_fb_width="640"       # UEFI-GOP framebuffer width, i.e. "1024"
+uefi_fb_height="480"      # UEFI-GOP framebuffer height, i.e. "768"
 uefi_tablet=""            # "YES" for precise USB mouse (not for FreeBSD)
 bhyve_hostbridge=""       # Blank for default, "AMD" for AMD and "NONE" for none
 #bhyveload_flags=""        # Additional bhyveload(8) flags
@@ -53,7 +53,7 @@ disk0_virtio="ahci-hd"    # "ahci-hd" or "virtio-blk" (required for bhyve)
 disk0_type="img"          # "dev", "img", "zvol", #iscsi or #nfs (required)
                           # Set "img" here for raw image installation method
 disk0_device=""           # Optional full path to existing device or zvol
-disk0_size="2G"           # Provisioned image or zvol size in B, K, M, G or T
+disk0_size="4G"           # Provisioned image or zvol size in B, K, M, G or T
                           # Blank for unmodified raw images, exact or larger
                           # for growfs raw images and zvols
 disk0_blocksize=""        # Provisioned zvol blocksize in B, K or M

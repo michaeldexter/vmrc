@@ -8,7 +8,7 @@ install_site="https://atxfiles.pfsense.org"
 #install_site="file://"   # Local payload option once downloaded (choose one)
 site_path="/mirror/downloads/"
                           # Distribution payload directory path
-site_payload="pfSense-CE-2.3.1-RELEASE-amd64.iso.gz"
+site_payload="pfSense-CE-2.4.3-RELEASE-amd64.iso.gz"
                           # Distribution payload file(s). ISO, IMG or
                           # space-separated FreeBSD distribution sets
 

@@ -3,12 +3,11 @@
 
 # Provisioning Variables (See FreeBSD-specific VM provisioning variables below)
 install_method="iso"      # "raw", "iso", "img", "distset" or "objdir"
-install_site="https://download.freebsd.org"
+install_site="http://releases.ubuntu.com"
                           # Distribution payload site i.e. ftp://ftp.freebsd.org
 #install_site="file://"   # Local payload option once downloaded (choose one)
-site_path="/ftp/releases/ISO-IMAGES/10.3/"
-                          # Distribution payload directory path
-site_payload="FreeBSD-10.3-RELEASE-amd64-disc1.iso.xz"
+site_path="/18.04/"       # Distribution payload directory path
+site_payload="ubuntu-18.04-desktop-amd64.iso"
                           # Distribution payload file(s). ISO, IMG or
                           # space-separated FreeBSD distribution sets
 
@@ -26,18 +25,19 @@ img_grub_d=""             # Normal mode grub-bhyve -d directory directive
 vm_autoboot=""            # "YES" to enable VM boot during host boot
 vm_livecd=""              # "YES" for a LiveCD like SmartOS or VyOS
 vm_cpus="2"               # Number of VM virtual CPUs (max 16) (required)
-vm_ram="1024"             # VM RAM Allocation in MB i.e. "2048" (required)
+vm_ram="2048"             # VM RAM Allocation in MB i.e. "2048" (required)
 vm_console="tmux"         # "tmux" or "screen" (required)
 vm_container="bhyve"      # "bhyve", "qemu" or "xen" (required)
 
-bhyve_loader="bhyveload"  # "bhyveload", "grub-bhyve", "uefi-csm" or "uefi-gop"
-uefi_bootrom=""           # Full path to UEFI boot ROM
-uefi_fb_width=""          # UEFI-GOP framebuffer width, i.e. "1024"
-uefi_fb_height=""         # UEFI-GOP framebuffer height, i.e. "768"
-uefi_tablet=""            # "YES" for precise USB mouse (not for FreeBSD)
+bhyve_loader="uefi-gop"   # "bhyveload", "grub-bhyve", "uefi-csm" or "uefi-gop"
+uefi_bootrom="/usr/local/share/uefi-firmware/BHYVE_UEFI.fd"
+                          # Full path to UEFI boot ROM
+uefi_fb_width="1024"      # UEFI-GOP framebuffer width, i.e. "1024"
+uefi_fb_height="768"      # UEFI-GOP framebuffer height, i.e. "768"
+uefi_tablet="YES"         # "YES" for precise USB mouse (not for FreeBSD)
 bhyve_hostbridge=""       # Blank for default, "AMD" for AMD and "NONE" for none
 #bhyveload_flags=""        # Additional bhyveload(8) flags
-bhyve_flags="-A"          # Additional bhyve(8) flags
+bhyve_flags=""            # Additional bhyve(8) flags
                           # -A for ACPI tables (Required for FreeBSD)
                           # -w Needed for man OSs
                           # -W MSI, rather than MSI-X Interrupts
@@ -52,7 +52,7 @@ disk0_virtio="ahci-hd"    # "ahci-hd" or "virtio-blk" (required for bhyve)
 disk0_type="img"          # "dev", "img", "zvol", #iscsi or #nfs (required)
                           # Set "img" here for raw image installation method
 disk0_device=""           # Optional full path to existing device or zvol
-disk0_size="2G"           # Provisioned image or zvol size in B, K, M, G or T
+disk0_size="10G"          # Provisioned image or zvol size in B, K, M, G or T
                           # Blank for unmodified raw images, exact or larger
                           # for growfs raw images and zvols
 disk0_blocksize=""        # Provisioned zvol blocksize in B, K or M

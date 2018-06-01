@@ -2,24 +2,28 @@
 # mkvm.sh copies this to ~/vmrc/vm/<vmname#>/vm.conf
 
 # Provisioning Variables (See FreeBSD-specific VM provisioning variables below)
-install_method="img"      # "raw", "iso", "img", "distset" or "objdir"
-install_site="https://download.freebsd.org"
+install_method="iso"      # "raw", "iso", "img", "distset" or "objdir"
+install_site="http://cdn.netbsd.org"
                           # Distribution payload site i.e. ftp://ftp.freebsd.org
 #install_site="file://"   # Local payload option once downloaded (choose one)
-site_path="/ftp/releases/ISO-IMAGES/10.3/"
+site_path="/pub/NetBSD/NetBSD-7.1.2/images/"
                           # Distribution payload directory path
-site_payload="FreeBSD-10.3-RELEASE-amd64-memstick.img.xz"
+site_payload="NetBSD-7.1.2-amd64.iso"
                           # Distribution payload file(s). ISO, IMG or
                           # space-separated FreeBSD distribution sets
 
 # bhyve-grub Parameters (Early to facilitate frequent updating)
-iso_grub_cfg=""           # \n separated grub.cfg (if required by GRUB)
+iso_grub_cfg="knetbsd -h -r cd0a (cd0)/netbsd\nboot"
+                          # \n separated grub.cfg (if required by GRUB)
 iso_grub_r=""             # VM device where to find grub.cfg i.e. -r cd0,msdos1
-iso_grub_d=""             # Install mode grub-bhyve -d directory directive
+iso_grub_d="-d $host_vmdir/$vmname"
+                          # Install mode grub-bhyve -d directory directive
                           # "-d $host_vmdir/$vmname" for hostfs or "-d /grub/"
-img_grub_cfg=""           # \n separated grub.cfg (if required by GRUB)
+img_grub_cfg="knetbsd -h -r wd0a (hd0,netbsd1)/netbsd\nboot"
+                          # \n separated grub.cfg (if required by GRUB)
 img_grub_r=""             # VM device where to find grub.cfg i.e. -r hd0,msdos1
-img_grub_d=""             # Normal mode grub-bhyve -d directory directive 
+img_grub_d="-d $host_vmdir/$vmname"
+                          # Normal mode grub-bhyve -d directory directive 
                           # "-d $host_vmdir/$vmname" for hostfs or "-d /grub/"
 
 # VM runtime boot variables
@@ -30,14 +34,14 @@ vm_ram="1024"             # VM RAM Allocation in MB i.e. "2048" (required)
 vm_console="tmux"         # "tmux" or "screen" (required)
 vm_container="bhyve"      # "bhyve", "qemu" or "xen" (required)
 
-bhyve_loader="bhyveload"  # "bhyveload", "grub-bhyve", "uefi-csm" or "uefi-gop"
+bhyve_loader="grub-bhyve" # "bhyveload", "grub-bhyve", "uefi-csm" or "uefi-gop"
 uefi_bootrom=""           # Full path to UEFI boot ROM
 uefi_fb_width=""          # UEFI-GOP framebuffer width, i.e. "1024"
 uefi_fb_height=""         # UEFI-GOP framebuffer height, i.e. "768"
 uefi_tablet=""            # "YES" for precise USB mouse (not for FreeBSD)
 bhyve_hostbridge=""       # Blank for default, "AMD" for AMD and "NONE" for none
 #bhyveload_flags=""        # Additional bhyveload(8) flags
-bhyve_flags="-A"          # Additional bhyve(8) flags
+bhyve_flags=""            # Additional bhyve(8) flags
                           # -A for ACPI tables (Required for FreeBSD)
                           # -w Needed for man OSs
                           # -W MSI, rather than MSI-X Interrupts
@@ -78,12 +82,3 @@ vm_dns=""                 # VM resolv.conf IPv4 DNS server
 vm_password=""            # VM password (clear text for now)
 
 # Comments:
-
-# Because the memstick installer is attached as ada0 during installation,
-# the VMs /etc/fstab must be changed from /dev/ada1* to /dev/ada0* as follows
-# during the last steps of installation:
-
-# Device        Mountpoint      FStype  Options Dump    Pass#
-#/dev/ada0p2     /               ufs     rw      1       1
-#/dev/ada0p3     none            swap    sw      0       0
-

@@ -3,16 +3,17 @@
 
 # Provisioning Variables (See FreeBSD-specific VM provisioning variables below)
 install_method="iso"      # "raw", "iso", "img", "distset" or "objdir"
-#install_site=""          # Distribution payload site i.e. ftp://ftp.freebsd.org
-install_site="file://"    # Local payload option once downloaded (choose one)
-site_path="/vmrc/isos/"   # Distribution payload directory path
-site_payload="rhel-server-7.2-x86_64-dvd.iso"
+install_site="http://ftp.osuosl.org"
+                          # Distribution payload site i.e. ftp://ftp.freebsd.org
+#install_site="file://"   # Local payload option once downloaded (choose one)
+site_path="/pub/centos/7/isos/x86_64/"
+                          # Distribution payload directory path
+site_payload="CentOS-7-x86_64-Minimal-1804.iso"
                           # Distribution payload file(s). ISO, IMG or
                           # space-separated FreeBSD distribution sets
 
 # bhyve-grub Parameters (Early to facilitate frequent updating)
-iso_grub_cfg="linux (cd0)/isolinux/vmlinuz\ninitrd (cd0)/isolinux/initrd.img\nbo
-ot"
+iso_grub_cfg="linux (cd0)/isolinux/vmlinuz\ninitrd (cd0)/isolinux/initrd.img\nboot"
                           # \n separated grub.cfg (if required by GRUB)
 iso_grub_r=""             # VM device where to find grub.cfg i.e. -r cd0,msdos1
 iso_grub_d="-d $host_vmdir/$vmname"
@@ -21,8 +22,7 @@ iso_grub_d="-d $host_vmdir/$vmname"
 img_grub_cfg=""           # \n separated grub.cfg (if required by GRUB)
 img_grub_r="-r hd0,msdos1"
                           # VM device where to find grub.cfg i.e. -r hd0,msdos1
-img_grub_d="-d /grub2/"
-                          # Normal mode grub-bhyve -d directory directive 
+img_grub_d="-d /grub2/"   # Normal mode grub-bhyve -d directory directive 
                           # "-d $host_vmdir/$vmname" for hostfs or "-d /grub/"
 
 # VM runtime boot variables

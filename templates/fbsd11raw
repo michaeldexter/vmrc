@@ -2,11 +2,13 @@
 # mkvm.sh copies this to ~/vmrc/vm/<vmname#>/vm.conf
 
 # Provisioning Variables (See FreeBSD-specific VM provisioning variables below)
-install_method="iso"      # "raw", "iso", "img", "distset" or "objdir"
-#install_site=""          # Distribution payload site i.e. ftp://ftp.freebsd.org
-install_site="file://"   # Local payload option once downloaded (choose one)
-site_path="/vmrc/isos/"   # Distribution payload directory path
-site_payload="<insert your ISO image here>"
+install_method="raw"      # "raw", "iso", "img", "distset" or "objdir"
+install_site="ftp://ftp10.freebsd.org"
+                          # Distribution payload site i.e. ftp://ftp.freebsd.org
+#install_site="file://"   # Local payload option once downloaded (choose one)
+site_path="/pub/FreeBSD/releases/VM-IMAGES/11.1-CURRENT/amd64/Latest/"
+                          # Distribution payload directory path
+site_payload="FreeBSD-11.1-RELEASE-amd64.raw.xz"
                           # Distribution payload file(s). ISO, IMG or
                           # space-separated FreeBSD distribution sets
 
@@ -24,19 +26,18 @@ img_grub_d=""             # Normal mode grub-bhyve -d directory directive
 vm_autoboot=""            # "YES" to enable VM boot during host boot
 vm_livecd=""              # "YES" for a LiveCD like SmartOS or VyOS
 vm_cpus="2"               # Number of VM virtual CPUs (max 16) (required)
-vm_ram="4096"             # VM RAM Allocation in MB i.e. "2048" (required)
+vm_ram="1024"             # VM RAM Allocation in MB i.e. "2048" (required)
 vm_console="tmux"         # "tmux" or "screen" (required)
 vm_container="bhyve"      # "bhyve", "qemu" or "xen" (required)
 
-bhyve_loader="uefi-gop"   # "bhyveload", "grub-bhyve", "uefi-csm" or "uefi-gop"
-uefi_bootrom="/usr/local/share/uefi-firmware/BHYVE_UEFI.fd"
-                          # Full path to UEFI boot ROM
-uefi_fb_width="1024"      # UEFI-GOP framebuffer width, i.e. "1024"
-uefi_fb_height="768"      # UEFI-GOP framebuffer height, i.e. "768"
-uefi_tablet="YES"         # "YES" for precise USB mouse (not for FreeBSD)
+bhyve_loader="bhyveload"  # "bhyveload", "grub-bhyve", "uefi-csm" or "uefi-gop"
+uefi_bootrom=""           # Full path to UEFI boot ROM
+uefi_fb_width=""          # UEFI-GOP framebuffer width, i.e. "1024"
+uefi_fb_height=""         # UEFI-GOP framebuffer height, i.e. "768"
+uefi_tablet=""            # "YES" for precise USB mouse (not for FreeBSD)
 bhyve_hostbridge=""       # Blank for default, "AMD" for AMD and "NONE" for none
 #bhyveload_flags=""        # Additional bhyveload(8) flags
-bhyve_flags=""            # Additional bhyve(8) flags
+bhyve_flags="-A"          # Additional bhyve(8) flags
                           # -A for ACPI tables (Required for FreeBSD)
                           # -w Needed for man OSs
                           # -W MSI, rather than MSI-X Interrupts
@@ -51,7 +52,7 @@ disk0_virtio="ahci-hd"    # "ahci-hd" or "virtio-blk" (required for bhyve)
 disk0_type="img"          # "dev", "img", "zvol", #iscsi or #nfs (required)
                           # Set "img" here for raw image installation method
 disk0_device=""           # Optional full path to existing device or zvol
-disk0_size="15G"          # Provisioned image or zvol size in B, K, M, G or T
+disk0_size=""             # Provisioned image or zvol size in B, K, M, G or T
                           # Blank for unmodified raw images, exact or larger
                           # for growfs raw images and zvols
 disk0_blocksize=""        # Provisioned zvol blocksize in B, K or M
@@ -77,18 +78,3 @@ vm_dns=""                 # VM resolv.conf IPv4 DNS server
 vm_password=""            # VM password (clear text for now)
 
 # Comments:
-
-# Windows requires a VirtIO driver to support networking. An ISO image
-# containing this can be downloaded from:
-#
-# https://fedoraproject.org/wiki/Windows_Virtio_Drivers
-#
-# This driver image can be copied to ~/disk1.img and attached as described
-# below.
-#
-# Desktop versions of Windows require a null ISO image to be attached for
-# licensing purposes. You can achieve this by touching disk1.img and attaching
-# as disk1 in vm.conf:
-#
-# disk1_virtio="ahci-cd"
-# disk1_type="img"

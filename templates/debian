@@ -2,23 +2,24 @@
 # mkvm.sh copies this to ~/vmrc/vm/<vmname#>/vm.conf
 
 # Provisioning Variables (See FreeBSD-specific VM provisioning variables below)
-install_method="distset"  # "raw", "iso", "img", "distset" or "objdir"
-install_site="ftp://ftp.freebsd.org"
+install_method="iso"      # "raw", "iso", "img", "distset" or "objdir"
+install_site="http://cdimage.debian.org"
                           # Distribution payload site i.e. ftp://ftp.freebsd.org
 #install_site="file://"   # Local payload option once downloaded (choose one)
-site_path="/pub/FreeBSD/releases/amd64/10.3-RELEASE/"
+site_path="/debian-cd/9.4.0/amd64/iso-cd/"
                           # Distribution payload directory path
-site_payload="base.txz kernel.txz"
+site_payload="debian-9.4.0-amd64-netinst.iso"
                           # Distribution payload file(s). ISO, IMG or
                           # space-separated FreeBSD distribution sets
 
 # bhyve-grub Parameters (Early to facilitate frequent updating)
 iso_grub_cfg=""           # \n separated grub.cfg (if required by GRUB)
-iso_grub_r=""             # VM device where to find grub.cfg i.e. -r cd0,msdos1
+iso_grub_r="-r cd0"       # VM device where to find grub.cfg i.e. -r cd0,msdos1
 iso_grub_d=""             # Install mode grub-bhyve -d directory directive
                           # "-d $host_vmdir/$vmname" for hostfs or "-d /grub/"
 img_grub_cfg=""           # \n separated grub.cfg (if required by GRUB)
-img_grub_r=""             # VM device where to find grub.cfg i.e. -r hd0,msdos1
+img_grub_r="-r hd0,msdos1"
+                          # VM device where to find grub.cfg i.e. -r hd0,msdos1
 img_grub_d=""             # Normal mode grub-bhyve -d directory directive 
                           # "-d $host_vmdir/$vmname" for hostfs or "-d /grub/"
 
@@ -26,18 +27,18 @@ img_grub_d=""             # Normal mode grub-bhyve -d directory directive
 vm_autoboot=""            # "YES" to enable VM boot during host boot
 vm_livecd=""              # "YES" for a LiveCD like SmartOS or VyOS
 vm_cpus="2"               # Number of VM virtual CPUs (max 16) (required)
-vm_ram="1024"                 # VM RAM Allocation in MB i.e. "2048" (required)
+vm_ram="1024"             # VM RAM Allocation in MB i.e. "2048" (required)
 vm_console="tmux"         # "tmux" or "screen" (required)
 vm_container="bhyve"      # "bhyve", "qemu" or "xen" (required)
 
-bhyve_loader="bhyveload"  # "bhyveload", "grub-bhyve", "uefi-csm" or "uefi-gop"
+bhyve_loader="grub-bhyve" # "bhyveload", "grub-bhyve", "uefi-csm" or "uefi-gop"
 uefi_bootrom=""           # Full path to UEFI boot ROM
 uefi_fb_width=""          # UEFI-GOP framebuffer width, i.e. "1024"
 uefi_fb_height=""         # UEFI-GOP framebuffer height, i.e. "768"
 uefi_tablet=""            # "YES" for precise USB mouse (not for FreeBSD)
 bhyve_hostbridge=""       # Blank for default, "AMD" for AMD and "NONE" for none
 #bhyveload_flags=""        # Additional bhyveload(8) flags
-bhyve_flags="-A"          # Additional bhyve(8) flags
+bhyve_flags=""            # Additional bhyve(8) flags
                           # -A for ACPI tables (Required for FreeBSD)
                           # -w Needed for man OSs
                           # -W MSI, rather than MSI-X Interrupts
@@ -56,7 +57,7 @@ disk0_size="2G"           # Provisioned image or zvol size in B, K, M, G or T
                           # Blank for unmodified raw images, exact or larger
                           # for growfs raw images and zvols
 disk0_blocksize=""        # Provisioned zvol blocksize in B, K or M
-disk0_fs="ufs"            # "ufs" or "zfs" if provisioned or fsck'd with FreeBSD
+disk0_fs=""               # "ufs" or "zfs" if provisioned or fsck'd with FreeBSD
 
 # VM Network devices nicN_bridge and nicN_type are required
 # Verify that requested bridges are configured in vmrc.conf
@@ -67,8 +68,8 @@ nic0_type="tap"           # "tap" or "vmnet"
 
 # FreeBSD-specific VM provisioning variables
 vm_objdir=""              # Location of OS object files
-vm_dev_util="gpart"       # VM Partitioning tool "fdisk" or "gpart"
-vm_dev_layout="gpt"       # VM partitioning layout: "gpt" or "mbr"
+vm_dev_util=""            # VM Partitioning tool "fdisk" or "gpart"
+vm_dev_layout=""          # VM partitioning layout: "gpt" or "mbr"
 vm_timezone=""            # VM timezone
 vm_hostname=""            # VM hostname
 vm_ipv4=""                # VM IPv4 address (blank for DHCP)

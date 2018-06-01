@@ -2,13 +2,13 @@
 # mkvm.sh copies this to ~/vmrc/vm/<vmname#>/vm.conf
 
 # Provisioning Variables (See FreeBSD-specific VM provisioning variables below)
-install_method="iso"      # "raw", "iso", "img", "distset" or "objdir"
-install_site="https://download.freenas.org"
+install_method="distset"  # "raw", "iso", "img", "distset" or "objdir"
+install_site="ftp://ftp.freebsd.org"
                           # Distribution payload site i.e. ftp://ftp.freebsd.org
 #install_site="file://"   # Local payload option once downloaded (choose one)
-site_path="/9.10/latest/x64/"
+site_path="/pub/FreeBSD/releases/amd64/10.4-RELEASE/"
                           # Distribution payload directory path
-site_payload="FreeNAS-9.10-STABLE-201606270534.iso"
+site_payload="base.txz kernel.txz"
                           # Distribution payload file(s). ISO, IMG or
                           # space-separated FreeBSD distribution sets
 
@@ -26,19 +26,18 @@ img_grub_d=""             # Normal mode grub-bhyve -d directory directive
 vm_autoboot=""            # "YES" to enable VM boot during host boot
 vm_livecd=""              # "YES" for a LiveCD like SmartOS or VyOS
 vm_cpus="2"               # Number of VM virtual CPUs (max 16) (required)
-vm_ram="4096"             # VM RAM Allocation in MB i.e. "2048" (required)
+vm_ram="1024"                 # VM RAM Allocation in MB i.e. "2048" (required)
 vm_console="tmux"         # "tmux" or "screen" (required)
 vm_container="bhyve"      # "bhyve", "qemu" or "xen" (required)
 
-bhyve_loader="uefi-gop"   # "bhyveload", "grub-bhyve", "uefi-csm" or "uefi-gop"
-uefi_bootrom="/usr/share/uefi-firmware/BHYVE_UEFI_20160526.fd"
-                          # Full path to UEFI boot ROM
-uefi_fb_width="640"       # UEFI-GOP framebuffer width, i.e. "1024"
-uefi_fb_height="480"      # UEFI-GOP framebuffer height, i.e. "768"
+bhyve_loader="bhyveload"  # "bhyveload", "grub-bhyve", "uefi-csm" or "uefi-gop"
+uefi_bootrom=""           # Full path to UEFI boot ROM
+uefi_fb_width=""          # UEFI-GOP framebuffer width, i.e. "1024"
+uefi_fb_height=""         # UEFI-GOP framebuffer height, i.e. "768"
 uefi_tablet=""            # "YES" for precise USB mouse (not for FreeBSD)
 bhyve_hostbridge=""       # Blank for default, "AMD" for AMD and "NONE" for none
 #bhyveload_flags=""        # Additional bhyveload(8) flags
-bhyve_flags=""            # Additional bhyve(8) flags
+bhyve_flags="-A"          # Additional bhyve(8) flags
                           # -A for ACPI tables (Required for FreeBSD)
                           # -w Needed for man OSs
                           # -W MSI, rather than MSI-X Interrupts
@@ -53,11 +52,11 @@ disk0_virtio="ahci-hd"    # "ahci-hd" or "virtio-blk" (required for bhyve)
 disk0_type="img"          # "dev", "img", "zvol", #iscsi or #nfs (required)
                           # Set "img" here for raw image installation method
 disk0_device=""           # Optional full path to existing device or zvol
-disk0_size="4G"           # Provisioned image or zvol size in B, K, M, G or T
+disk0_size="2G"           # Provisioned image or zvol size in B, K, M, G or T
                           # Blank for unmodified raw images, exact or larger
                           # for growfs raw images and zvols
 disk0_blocksize=""        # Provisioned zvol blocksize in B, K or M
-disk0_fs=""               # "ufs" or "zfs" if provisioned or fsck'd with FreeBSD
+disk0_fs="ufs"            # "ufs" or "zfs" if provisioned or fsck'd with FreeBSD
 
 # VM Network devices nicN_bridge and nicN_type are required
 # Verify that requested bridges are configured in vmrc.conf
@@ -68,8 +67,8 @@ nic0_type="tap"           # "tap" or "vmnet"
 
 # FreeBSD-specific VM provisioning variables
 vm_objdir=""              # Location of OS object files
-vm_dev_util=""            # VM Partitioning tool "fdisk" or "gpart"
-vm_dev_layout=""          # VM partitioning layout: "gpt" or "mbr"
+vm_dev_util="gpart"       # VM Partitioning tool "fdisk" or "gpart"
+vm_dev_layout="gpt"       # VM partitioning layout: "gpt" or "mbr"
 vm_timezone=""            # VM timezone
 vm_hostname=""            # VM hostname
 vm_ipv4=""                # VM IPv4 address (blank for DHCP)

@@ -31,7 +31,7 @@ vm_console="tmux"         # "tmux" or "screen" (required)
 vm_container="bhyve"      # "bhyve", "qemu" or "xen" (required)
 
 bhyve_loader="uefi-csm"   # "bhyveload", "grub-bhyve", "uefi-csm" or "uefi-gop"
-uefi_bootrom="/usr/share/uefi-firmware/BHYVE_UEFI_CSM_20151002.fd"
+uefi_bootrom="/usr/local/share/uefi-firmware/BHYVE_UEFI_CSM.fd"
                           # Full path to UEFI boot ROM
 uefi_fb_width=""          # UEFI-GOP framebuffer width, i.e. "1024"
 uefi_fb_height=""         # UEFI-GOP framebuffer height, i.e. "768"
