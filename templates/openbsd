@@ -30,7 +30,7 @@ img_grub_d="-d $host_vmdir/$vmname"
 vm_autoboot=""            # "YES" to enable VM boot during host boot
 vm_livecd=""              # "YES" for a LiveCD like SmartOS or VyOS
 vm_cpus="2"               # Number of VM virtual CPUs (max 16) (required)
-vm_ram="1048"             # VM RAM Allocation in MB i.e. "2048" (required)
+vm_ram="1024"             # VM RAM Allocation in MB i.e. "2048" (required)
 vm_console="tmux"         # "tmux" or "screen" (required)
 vm_container="bhyve"      # "bhyve", "qemu" or "xen" (required)
 
