@@ -5,8 +5,6 @@ vmrc is a Virtual Machine rc(8) script for managing bhyve, Xen and other virtual
 
 Home page: http://vmrc.bsd.lv
 
-Development snapshot: http://vmrc.bsd.lv/vmrc-snapshot.tar (Often newer)
-
 See the "vmrc-known-issues.txt" file for up-to-date status information and there are developer notes at the end of "vmrc-instructions.txt".
 
 As this is a work in progress, please consider submitting questions and feature requests prior to patches.
