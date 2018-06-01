@@ -55,7 +55,7 @@ disk0_virtio="ahci-hd"    # "ahci-hd" or "virtio-blk" (required for bhyve)
 disk0_type="img"          # "dev", "img", "zvol", #iscsi or #nfs (required)
                           # Set "img" here for raw image installation method
 disk0_device=""           # Optional full path to existing device or zvol
-disk0_size="2G"           # Provisioned image or zvol size in B, K, M, G or T
+disk0_size="4G"           # Provisioned image or zvol size in B, K, M, G or T
                           # Blank for unmodified raw images, exact or larger
                           # for growfs raw images and zvols
 disk0_blocksize=""        # Provisioned zvol blocksize in B, K or M

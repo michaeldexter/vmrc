@@ -1,6 +1,6 @@
 ################################################################ LICENSE
 #
-# Copyright (c) 2012-2016 Michael Dexter <editor@callfortesting.org>
+# Copyright (c) 2012-2016,2018 Michael Dexter <editor@callfortesting.org>
 #
 # Permission to use, copy, modify, and distribute this software for any
 # purpose with or without fee is hereby granted, provided that the above
@@ -17,11 +17,17 @@
 ############################################################ INFORMATION
 #
 # Title: virtual machine rc script instructions
-# Version: v.0.9.7
+# Version: v.0.9.8
 #
 # vmrc Change Log
 #
 ########################################################################
+
+NOTABLE CHANGES FROM .0.9.7 TO .0.9.8
+
+* Template updates
+* Added OpenRC support to install-vmrc.sh
+* Added mention of bhyve-firmware package
 
 NOTABLE CHANGES FROM .0.9.3 TO .0.9.7
 

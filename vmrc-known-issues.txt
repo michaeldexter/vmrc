@@ -1,5 +1,6 @@
 Known vmrc Issues/To do
 
+0. Not checking if tmux, screen, tightvnc and other dependencies are installed
 1. bhyveload has a 31 character VM name limit
 2. bhyve will not yet report *which* backing device is missing (Pending)
 3. bhyve UEFI-GOP does not support numbered VNC "displays"

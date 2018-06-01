@@ -18,6 +18,8 @@ A: This is how Unix systems launch services and a virtual machine is often
    desired at boot time. An rc script can also be incorporated into any
    system orchestration system that can launch a service such as a web server.
 
+   Yes, it is an official practice to add arguments to an rc.d script:
+https://www.freebsd.org/doc/en_US.ISO8859-1/articles/rc-scripting/rcng-args.html
 
 Q: Why support multiple hypervisors/emulators?
 

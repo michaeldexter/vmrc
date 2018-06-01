@@ -84,11 +84,17 @@ fi
 
 # Install vm rc script and vmrc.conf to established FreeBSD destinations
 
-echo ; echo Running cp vm /usr/local/etc/rc.d/
-cp vm /usr/local/etc/rc.d/
-
-[ -f /usr/local/etc/rc.d/vm ] || \
-	{ echo The vm rc script failed to copy. Exiting ; exit 1 ; }
+echo ; echo Running cp vm /usr/local/etc/rc.d/ or init.d/
+service --version > /dev/null 2>&1
+if [ $? = 0 ]; then
+	cp vm /usr/local/etc/init.d/
+	[ -f /usr/local/etc/init.d/vm ] || \
+		{ echo The vm rc script failed to copy. Exiting ; exit 1 ; }
+else
+	cp vm /usr/local/etc/rc.d/
+	[ -f /usr/local/etc/rc.d/vm ] || \
+		{ echo The vm rc script failed to copy. Exiting ; exit 1 ; }
+fi
 
 # May as well as combine these with a numeric mask
 echo Running chmod o+x /usr/local/etc/rc.d/vm

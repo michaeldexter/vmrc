@@ -19,10 +19,10 @@
 ############################################################ INFORMATION
 #
 # Title: virtual machine rc script
-# Version: v.0.9.7
+# Version: v.0.9.8
 #
 # PROVIDE: vm
-# REQUIRE: DAEMON
+# REQUIRE: LOGIN DAEMON
 # KEYWORD: shutdown
 #
 # Add the following line to /etc/rc.conf to enable vmrc:

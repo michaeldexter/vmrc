@@ -1,6 +1,6 @@
 ################################################################ LICENSE
 #
-# Copyright (c) 2012-2016 Michael Dexter <editor@callfortesting.org>
+# Copyright (c) 2012-2016,2018 Michael Dexter <editor@callfortesting.org>
 #
 # Permission to use, copy, modify, and distribute this software for any
 # purpose with or without fee is hereby granted, provided that the above
@@ -17,7 +17,7 @@
 ############################################################ INFORMATION
 #
 # Title: virtual machine rc script instructions
-# Version: v.0.9.7
+# Version: v.0.9.8
 #
 # vmrc usage instructions and developer notes
 #
@@ -367,10 +367,11 @@ as they are sourced sequentially.
 
 tmux functionality requires ports/sysutils/tmux
 screen functionality requires ports/sysutils/screen
+vnc functionality requires ports/net/tightvnc
 Non-FreeBSD VM support requires ports/sysutils/grub2-bhyve 
 QEMU functionality requires ports/emulators/qemu(-devel|-sbruno)
 Xen functionality requires ports/emulators/xen and ports/net/tightvnc
-UEFI firmware (Retrieved by a script for now. Port to come.)
+UEFI firmware can be found in ports/sysutils/bhyve-firmware
 
 
 ### TEMPLATES ###
